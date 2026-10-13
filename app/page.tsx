@@ -42,27 +42,30 @@ function ShootingStars() {
       const timer = window.setTimeout(() => {
         timers.delete(timer)
         if (cancelled) return
-        const motion = { x: 8 + Math.random() * 84, y: 9 + Math.random() * 25, dx: (Math.random() > .5 ? 1 : -1) * (30 + Math.random() * 50), dy: 18 + Math.random() * 32, duration: 1500 + Math.random() * 1300 }
+        const fixed = elements.indexOf(element) === 0
+        const motion = { x: fixed ? 22 : 8 + Math.random() * 70, y: fixed ? 12 : 9 + Math.random() * 25, dx: fixed ? 42 : (Math.random() > .5 ? 1 : -1) * (30 + Math.random() * 50), dy: fixed ? 25 : 18 + Math.random() * 32, duration: fixed ? 2200 : 1500 + Math.random() * 1300 }
         const dot = element.querySelector<HTMLElement>('.particle-dot')
         const trails = [...element.querySelectorAll<HTMLElement>('.particle-trail')]
+        const history: { x: number; y: number; time: number }[] = []
         element.style.left = `${motion.x}%`; element.style.top = `${motion.y}%`
-        let started = performance.now()
+        const started = performance.now()
         const update = (now: number) => {
           if (cancelled) return
           const progress = Math.min(1, (now - started) / motion.duration)
           const eased = progress < .12 ? progress / .12 : progress > .82 ? 1 - (progress - .82) / .18 : 1
           const x = motion.dx * progress; const y = motion.dy * progress
-          const length = Math.hypot(motion.dx, motion.dy); const ux = motion.dx / length; const uy = motion.dy / length
+          history.push({ x, y, time: now })
+          while (history.length && now - history[0].time > 220) history.shift()
           if (dot) { dot.style.opacity = `${Math.max(0, eased)}`; dot.style.transform = `translate(${x - 1.5}px, ${y - 1.5}px) scale(${.7 + eased * .3})` }
           trails.forEach((trail, index) => {
-            const distance = 7 + index * 5
-            const trailProgress = Math.max(0, progress - distance / length)
-            const tx = x - ux * distance; const ty = y - uy * distance
-            trail.style.opacity = `${Math.max(0, eased * (1 - index / trails.length) * (trailProgress > 0 ? 1 : 0))}`
-            trail.style.transform = `translate(${tx}px, ${ty}px) rotate(${Math.atan2(motion.dy, motion.dx)}rad) scaleX(${Math.max(.2, 1 - index * .18)})`
+            const sample = history[Math.max(0, history.length - 1 - (index + 1) * 4)]
+            const age = sample ? now - sample.time : Infinity
+            const alpha = sample ? Math.max(0, eased * (1 - age / 220) * (1 - index / trails.length)) : 0
+            trail.style.opacity = `${alpha}`
+            trail.style.transform = sample ? `translate(${sample.x - 1.5}px, ${sample.y - .5}px) rotate(${Math.atan2(motion.dy, motion.dx)}rad)` : 'translate(0, 0)'
           })
           if (progress < 1) frame = requestAnimationFrame(update)
-          else { if (dot) dot.style.opacity = '0'; trails.forEach((trail) => { trail.style.opacity = '0' }); if (!cancelled) launch(element, 1800 + Math.random() * 3600) }
+          else { history.length = 0; if (dot) dot.style.opacity = '0'; trails.forEach((trail) => { trail.style.opacity = '0' }); if (!cancelled) launch(element, 1800 + Math.random() * 3600) }
         }
         frame = requestAnimationFrame(update)
       }, delay)
