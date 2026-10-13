@@ -53,7 +53,7 @@ function ShootingStars() {
         ? 8 + Math.random() * Math.max(20, width * 0.65)
         : width - 8 - Math.random() * Math.max(20, width * 0.65)
       const startY = 6 + Math.random() * Math.max(24, height * 0.3)
-      const duration = 1250 + Math.random() * 1250
+      const duration = 900 + Math.random() * 500
       const color = ['var(--ice)', 'var(--lavender)', 'var(--ivory)'][Math.floor(Math.random() * 3)]
       const directionX = direction * distanceX
 
@@ -84,6 +84,8 @@ function ShootingStars() {
     resizeObserver = new ResizeObserver(handleResize)
     resizeObserver.observe(sky)
     handleResize()
+    // Launch one immediately so the effect is visible as soon as the scene mounts.
+    launch(0)
     return () => {
       cancelled = true
       timers.current.forEach(window.clearTimeout)
