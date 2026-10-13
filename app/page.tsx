@@ -36,57 +36,44 @@ function ShootingStars() {
     const elements = particles.current.filter((element): element is HTMLSpanElement => Boolean(element))
     if (!elements.length) return
     let cancelled = false
-    const animations = new Set<Animation>()
+    let frame = 0
     const timers = new Set<number>()
     const launch = (element: HTMLSpanElement, delay: number) => {
       const timer = window.setTimeout(() => {
         timers.delete(timer)
         if (cancelled) return
-        const motion = {
-          x: 8 + Math.random() * 84,
-          y: 9 + Math.random() * 25,
-          dx: (Math.random() > .5 ? 1 : -1) * (30 + Math.random() * 50),
-          dy: 18 + Math.random() * 32,
-          duration: 1500 + Math.random() * 1300,
-          trail: 12 + Math.random() * 13,
-        }
-        element.style.left = `${motion.x}%`
-        element.style.top = `${motion.y}%`
-        element.style.setProperty('--particle-trail-angle', `${Math.atan2(motion.dy, motion.dx) * 180 / Math.PI}deg`)
-        element.style.setProperty('--particle-trail-length', `${motion.trail}px`)
+        const motion = { x: 8 + Math.random() * 84, y: 9 + Math.random() * 25, dx: (Math.random() > .5 ? 1 : -1) * (30 + Math.random() * 50), dy: 18 + Math.random() * 32, duration: 1500 + Math.random() * 1300 }
         const dot = element.querySelector<HTMLElement>('.particle-dot')
         const trails = [...element.querySelectorAll<HTMLElement>('.particle-trail')]
-        const dotAnimation = dot?.animate([
-          { opacity: 0, transform: 'translate(-1.5px, -1.5px) scale(.7)' },
-          { opacity: 1, transform: 'translate(-1.5px, -1.5px) scale(1)', offset: .16 },
-          { opacity: .92, transform: `translate(${motion.dx * .72 - 1.5}px, ${motion.dy * .72 - 1.5}px) scale(.95)`, offset: .76 },
-          { opacity: 0, transform: `translate(${motion.dx - 1.5}px, ${motion.dy - 1.5}px) scale(.55)` },
-        ], { duration: motion.duration, easing: 'ease-in-out', fill: 'both' })
-        const trailAnimations = trails.map((trail, trailIndex) => trail.animate([
-          { opacity: 0, transform: 'translate(-2px, -0.5px) scaleX(.25)' },
-          { opacity: .28 - trailIndex * .045, transform: `translate(${motion.dx * .08 - 2}px, ${motion.dy * .08 - .5}px) scaleX(1)`, offset: .18 },
-          { opacity: .16 - trailIndex * .025, transform: `translate(${motion.dx * .72 - 2}px, ${motion.dy * .72 - .5}px) scaleX(.8)`, offset: .76 },
-          { opacity: 0, transform: `translate(${motion.dx - 2}px, ${motion.dy - .5}px) scaleX(.35)` },
-        ], { duration: motion.duration, delay: trailIndex * 65, easing: 'ease-in-out', fill: 'both' }))
-        const runningAnimations = [dotAnimation, ...trailAnimations].filter((animation): animation is Animation => Boolean(animation))
-        runningAnimations.forEach((animation) => animations.add(animation))
-        dotAnimation?.finished.then(() => {
-          runningAnimations.forEach((animation) => animations.delete(animation))
-          if (!cancelled) launch(element, 1800 + Math.random() * 3600)
-        }).catch(() => runningAnimations.forEach((animation) => animations.delete(animation)))
+        element.style.left = `${motion.x}%`; element.style.top = `${motion.y}%`
+        let started = performance.now()
+        const update = (now: number) => {
+          if (cancelled) return
+          const progress = Math.min(1, (now - started) / motion.duration)
+          const eased = progress < .12 ? progress / .12 : progress > .82 ? 1 - (progress - .82) / .18 : 1
+          const x = motion.dx * progress; const y = motion.dy * progress
+          const length = Math.hypot(motion.dx, motion.dy); const ux = motion.dx / length; const uy = motion.dy / length
+          if (dot) { dot.style.opacity = `${Math.max(0, eased)}`; dot.style.transform = `translate(${x - 1.5}px, ${y - 1.5}px) scale(${.7 + eased * .3})` }
+          trails.forEach((trail, index) => {
+            const distance = 7 + index * 5
+            const trailProgress = Math.max(0, progress - distance / length)
+            const tx = x - ux * distance; const ty = y - uy * distance
+            trail.style.opacity = `${Math.max(0, eased * (1 - index / trails.length) * (trailProgress > 0 ? 1 : 0))}`
+            trail.style.transform = `translate(${tx}px, ${ty}px) rotate(${Math.atan2(motion.dy, motion.dx)}rad) scaleX(${Math.max(.2, 1 - index * .18)})`
+          })
+          if (progress < 1) frame = requestAnimationFrame(update)
+          else { if (dot) dot.style.opacity = '0'; trails.forEach((trail) => { trail.style.opacity = '0' }); if (!cancelled) launch(element, 1800 + Math.random() * 3600) }
+        }
+        frame = requestAnimationFrame(update)
       }, delay)
       timers.add(timer)
     }
     elements.forEach((element, index) => launch(element, index * 1700))
-    return () => {
-      cancelled = true
-      timers.forEach((timer) => window.clearTimeout(timer))
-      animations.forEach((animation) => animation.cancel())
-    }
+    return () => { cancelled = true; cancelAnimationFrame(frame); timers.forEach(window.clearTimeout) }
   }, [])
 
   return <div className="shooting-stars" aria-hidden="true">
-    {['particle-one', 'particle-two', 'particle-three', 'particle-four'].map((className, index) => <span key={className} ref={(element) => { particles.current[index] = element }} className={`shooting-particle ${className}`}><span className="particle-trail particle-trail-back" /><span className="particle-trail particle-trail-mid" /><span className="particle-trail particle-trail-front" /><span className="particle-dot" /></span>)}
+    {['particle-one', 'particle-two', 'particle-three', 'particle-four'].map((className, index) => <span key={className} ref={(element) => { particles.current[index] = element }} className={`shooting-particle ${className}`}><span className="particle-trail" /><span className="particle-trail" /><span className="particle-trail" /><span className="particle-dot" /></span>)}
   </div>
 }
 
