@@ -35,46 +35,49 @@ function ShootingStars() {
   useEffect(() => {
     const elements = stars.current.filter((element): element is HTMLSpanElement => Boolean(element))
     if (!elements.length) return
-    let frame = 0
     let cancelled = false
-    const active = elements.map(() => ({ start: -Infinity, duration: 2600, dx: 0, dy: 0 }))
+    const animations = new Set<Animation>()
+    const timers = new Set<number>()
     const launches = [
       { delay: 0, dx: 220, dy: 130, duration: 2600 },
       { delay: 3200, dx: -190, dy: 120, duration: 3000 },
       { delay: 6900, dx: -170, dy: 100, duration: 2400 },
       { delay: 9800, dx: 180, dy: 110, duration: 2800 },
     ]
-    const startedAt = performance.now()
 
-    const launch = (index: number, now: number, preset?: typeof launches[number]) => {
-      const element = elements[index]
-      const motion = preset ?? {
-        delay: 0,
-        dx: (Math.random() > .5 ? 1 : -1) * (150 + Math.random() * 100),
-        dy: 80 + Math.random() * 80,
-        duration: 2100 + Math.random() * 1100,
-      }
-      active[index] = { start: now + motion.delay, duration: motion.duration, dx: motion.dx, dy: motion.dy }
-      element.style.opacity = '0'
-      element.style.transform = 'translate3d(0, 0, 0) rotate(var(--star-angle)) scale(.55)'
-    }
+    const randomMotion = () => ({
+      dx: (Math.random() > .5 ? 1 : -1) * (150 + Math.random() * 100),
+      dy: 80 + Math.random() * 80,
+      duration: 2100 + Math.random() * 1100,
+    })
 
-    elements.forEach((_, index) => launch(index, startedAt, launches[index]))
-    const tick = (now: number) => {
+    const launch = (element: HTMLSpanElement, motion: { dx: number; dy: number; duration: number }, quiet = 0) => {
       if (cancelled) return
-      elements.forEach((element, index) => {
-        const motion = active[index]
-        if (now < motion.start) return
-        const progress = Math.min(1, (now - motion.start) / motion.duration)
-        const eased = progress < .18 ? progress / .18 : progress > .72 ? 1 - (progress - .72) / .28 : 1
-        element.style.opacity = String(Math.max(0, Math.min(1, eased)))
-        element.style.transform = `translate3d(${motion.dx * progress}px, ${motion.dy * progress}px, 0) rotate(var(--star-angle)) scale(${progress < .18 ? .55 + progress * 2.5 : .9})`
-        if (progress >= 1) launch(index, now, { delay: 850 + Math.random() * 3200, dx: (Math.random() > .5 ? 1 : -1) * (150 + Math.random() * 100), dy: 80 + Math.random() * 80, duration: 2100 + Math.random() * 1100 })
-      })
-      frame = requestAnimationFrame(tick)
+      const timer = window.setTimeout(() => {
+        timers.delete(timer)
+        if (cancelled) return
+        element.style.opacity = '1'
+        const animation = element.animate([
+          { opacity: 0, transform: 'translate3d(0, 0, 0) rotate(var(--star-angle)) scale(.55)' },
+          { opacity: .95, transform: `translate3d(${motion.dx * .18}px, ${motion.dy * .18}px, 0) rotate(var(--star-angle)) scale(1)`, offset: .18 },
+          { opacity: .82, transform: `translate3d(${motion.dx * .82}px, ${motion.dy * .82}px, 0) rotate(var(--star-angle)) scale(.9)`, offset: .72 },
+          { opacity: 0, transform: `translate3d(${motion.dx}px, ${motion.dy}px, 0) rotate(var(--star-angle)) scale(.45)` },
+        ], { duration: motion.duration, easing: 'linear', fill: 'both' })
+        animations.add(animation)
+        animation.finished.then(() => {
+          animations.delete(animation)
+          if (!cancelled) launch(element, randomMotion(), 850 + Math.random() * 3200)
+        }).catch(() => animations.delete(animation))
+      }, quiet)
+      timers.add(timer)
     }
-    frame = requestAnimationFrame(tick)
-    return () => { cancelled = true; cancelAnimationFrame(frame) }
+
+    elements.forEach((element, index) => launch(element, launches[index] ?? randomMotion(), launches[index]?.delay ?? 0))
+    return () => {
+      cancelled = true
+      timers.forEach((timer) => window.clearTimeout(timer))
+      animations.forEach((animation) => animation.cancel())
+    }
   }, [])
 
   return <div className="shooting-stars" aria-hidden="true">
