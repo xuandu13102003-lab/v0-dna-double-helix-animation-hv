@@ -6,23 +6,24 @@ type StrokeState = 'pending' | 'drawing' | 'complete'
 type Geometry = SVGPathElement
 
 function getGeometryLength(element: Geometry) {
+  if (!element.isConnected || !element.getAttribute('d')) return null
+
+  // Measure a visible clone instead of mutating the live illustration. This
+  // also works in browsers that reject getTotalLength for hidden SVG nodes.
+  const probe = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+  path.setAttribute('d', element.getAttribute('d') ?? '')
+  probe.setAttribute('aria-hidden', 'true')
+  probe.style.cssText = 'position:absolute;width:1px;height:1px;overflow:visible;opacity:0;pointer-events:none'
+  probe.appendChild(path)
+  document.body.appendChild(probe)
   try {
-    if (!element.isConnected) return null
-    // Some browsers reject getTotalLength while an SVG path is fully hidden.
-    // Measure it in its rendered state, then let the queue hide it again.
-    const previousOpacity = element.style.opacity
-    const previousVisibility = element.style.visibility
-    element.style.opacity = '1'
-    element.style.visibility = 'visible'
-    element.style.display = 'inline'
-    const length = element.getTotalLength()
-    element.style.opacity = previousOpacity
-    element.style.visibility = previousVisibility
-    element.style.display = ''
+    const length = path.getTotalLength()
     return Number.isFinite(length) && length > 0 ? length : null
   } catch {
-    element.style.opacity = '0'
     return null
+  } finally {
+    probe.remove()
   }
 }
 
@@ -57,19 +58,28 @@ export default function Page() {
     const groupOrder = new Map(groups.map((group, index) => [group, index]))
     const ordered = geometries.current
       .filter((element) => getGeometryLength(element) !== null)
-      .sort((a, b) => (groupOrder.get(a.dataset.group || '') ?? 99) - (groupOrder.get(b.dataset.group || '') ?? 99))
+      .sort((a, b) => (groupOrder.get((a.dataset.group || '') as typeof groups[number]) ?? 99) - (groupOrder.get((b.dataset.group || '') as typeof groups[number]) ?? 99))
     const lengths = ordered.map((element) => getGeometryLength(element) ?? 1)
-    const gap = 24
-    const available = 30000
-    const minimumStrokeDuration = 24
-    const lengthBudget = Math.max(1, available - gap * Math.max(0, ordered.length - 1) - minimumStrokeDuration * ordered.length)
-    const pixelsPerMillisecond = lengths.reduce((sum, length) => sum + length, 0) / lengthBudget
     ordered.forEach((element, pathIndex) => {
       const length = lengths[pathIndex]
       element.style.strokeDasharray = `${length}`
       element.style.strokeDashoffset = `${length}`
       element.style.opacity = '0'
     })
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      ordered.forEach((element) => {
+        element.style.opacity = '1'
+        element.style.strokeDashoffset = '0'
+      })
+      setStates(groups.map(() => 'complete'))
+      setDrawing(false)
+      return
+    }
+    const gap = 24
+    const available = 30000
+    const minimumStrokeDuration = 24
+    const lengthBudget = Math.max(1, available - gap * Math.max(0, ordered.length - 1) - minimumStrokeDuration * ordered.length)
+    const pixelsPerMillisecond = lengths.reduce((sum, length) => sum + length, 0) / lengthBudget
     let index = 0; let started = 0; let currentGroup = ''
     const draw = (now: number) => {
       if (id !== runId.current) return
@@ -167,7 +177,7 @@ export default function Page() {
         <g className="balloon balloon-three" ref={(element) => registerBalloonGroup(element, 2)}>{line('bubbles', 'M108 335c-8-1-13-8-12-17 1-10 8-17 18-17 9 0 16 7 17 17 1 9-5 16-13 17-10 2-10 2-10 0Z', 'balloon-body')}{line('bubbles', 'M108 335l-3 6 3 5 3-5-3-6Z', 'balloon-knot')}{line('bubbles', 'M108 346 C 111 359, 105 371, 108 388', 'balloon-string', undefined, (element) => registerBalloonString(element, 2))}</g>
         <g className="balloon balloon-four" ref={(element) => registerBalloonGroup(element, 3)}>{line('bubbles', 'M598 375c-10-2-17-10-16-21 1-12 10-20 22-20 12 0 21 8 22 20 1 11-6 19-17 21-12 2-12 2-12 0Z', 'balloon-body')}{line('bubbles', 'M598 375l-4 7 4 6 4-6-4-7Z', 'balloon-knot')}{line('bubbles', 'M598 388 C 602 402, 594 418, 598 438', 'balloon-string', undefined, (element) => registerBalloonString(element, 3))}</g>
         {line('fireworks', 'M105 180l3 9 9 3-9 3-3 9-3-9-9-3 9-3Z')}
-        <g className={`envelope ${completed ? 'envelope-ready' : ''}`} onClick={() => completed && setOpen(true)} role="button" tabIndex={completed ? 0 : -1} aria-disabled={!completed} aria-label="Mở lá thư">{line('envelope', 'M245 535h210v42H245z')}{line('envelope', 'm245 535 105 29 105-29M245 577l77-31M455 577l-77-31')}{<circle cx="350" cy="558" r="7" />}</g>
+        <g className={`envelope ${completed ? 'envelope-ready' : ''}`} onClick={() => completed && setOpen(true)} onKeyDown={(event) => { if (completed && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); setOpen(true) } }} role="button" tabIndex={completed ? 0 : -1} aria-disabled={!completed} aria-label="Mở lá thư">{line('envelope', 'M245 535h210v42H245z')}{line('envelope', 'm245 535 105 29 105-29M245 577l77-31M455 577l-77-31')}{<circle cx="350" cy="558" r="7" />}</g>
         {pen && <circle className="pen-tip" cx={pen.x} cy={pen.y} r="3" />}
       </svg>
       {completed && !open && <button className="hint" onClick={() => setOpen(true)}>Tap the letter to open</button>}
