@@ -52,13 +52,13 @@ function ShootingStars() {
         }
         element.style.left = `${motion.x}%`
         element.style.top = `${motion.y}%`
-        element.style.setProperty('--particle-trail-angle', `${Math.atan2(-motion.dy, -motion.dx) * 180 / Math.PI}deg`)
+        element.style.setProperty('--particle-trail-angle', `${Math.atan2(motion.dy, motion.dx) * 180 / Math.PI}deg`)
         element.style.setProperty('--particle-trail-length', `${motion.trail}px`)
         const animation = element.animate([
-          { opacity: 0, transform: 'translate(0, 0) scale(.65)' },
-          { opacity: .72, transform: 'translate(8px, 5px) scale(1)', offset: .2 },
-          { opacity: .64, transform: `translate(${motion.dx * .72}px, ${motion.dy * .72}px) scale(.95)`, offset: .72 },
-          { opacity: 0, transform: `translate(${motion.dx}px, ${motion.dy}px) scale(.7)` },
+          { opacity: 0, transform: 'translate(0, 0)' },
+          { opacity: .72, transform: 'translate(8px, 5px)', offset: .2 },
+          { opacity: .64, transform: `translate(${motion.dx * .72}px, ${motion.dy * .72}px)`, offset: .72 },
+          { opacity: 0, transform: `translate(${motion.dx}px, ${motion.dy}px)` },
         ], { duration: motion.duration, easing: 'ease-in-out', fill: 'both' })
         animations.add(animation)
         animation.finished.then(() => {
@@ -77,7 +77,7 @@ function ShootingStars() {
   }, [])
 
   return <div className="shooting-stars" aria-hidden="true">
-    {['particle-one', 'particle-two', 'particle-three', 'particle-four'].map((className, index) => <span key={className} ref={(element) => { particles.current[index] = element }} className={`shooting-particle ${className}`} />)}
+    {['particle-one', 'particle-two', 'particle-three', 'particle-four'].map((className, index) => <span key={className} ref={(element) => { particles.current[index] = element }} className={`shooting-particle ${className}`}><span className="particle-trail" /><span className="particle-dot" /></span>)}
   </div>
 }
 
