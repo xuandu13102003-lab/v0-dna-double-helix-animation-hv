@@ -37,10 +37,8 @@ export default function Page() {
   const [open, setOpen] = useState(false); const [drawing, setDrawing] = useState(true); const [pen, setPen] = useState<{ x: number; y: number } | null>(null)
   const geometries = useRef<Geometry[]>([]); const raf = useRef<number | undefined>(undefined); const balloonRaf = useRef<number | undefined>(undefined); const runId = useRef(0)
   const balloonGroups = useRef<(SVGGElement | null)[]>([])
-  const balloonStrings = useRef<(SVGPathElement | null)[]>([])
   const register = (element: Geometry | null) => { if (element && !geometries.current.includes(element)) geometries.current.push(element) }
   const registerBalloonGroup = (element: SVGGElement | null, index: number) => { balloonGroups.current[index] = element }
-  const registerBalloonString = (element: SVGPathElement | null, index: number) => { balloonStrings.current[index] = element }
   const replay = useCallback(() => {
     runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setDrawing(true); setStates(groups.map(() => 'pending'))
     const ordered = geometries.current.filter((element) => getGeometryLength(element) !== null)
@@ -100,24 +98,14 @@ export default function Page() {
         { phase: 3.1, speed: 1.12, sway: 6, lift: 10 },
         { phase: 4.6, speed: 0.84, sway: 10, lift: 16 },
       ]
-      const strings = [
-        { x: 130, y: 236, end: 292 },
-        { x: 560, y: 288, end: 354 },
-        { x: 108, y: 346, end: 388 },
-        { x: 598, y: 388, end: 438 },
-      ]
       motion.forEach((balloon, index) => {
         const wave = elapsed * balloon.speed + balloon.phase
         const x = Math.sin(wave) * balloon.sway
         const y = Math.sin(wave * 1.35) * balloon.lift
         const group = balloonGroups.current[index]
-        const string = balloonStrings.current[index]
-        if (group) group.style.transform = `translate(${x}px, ${y}px)`
-        if (string) {
-          const anchor = strings[index]
-          const bend = Math.sin(wave - 0.55) * balloon.sway * 0.72
-          string.setAttribute('d', `M${anchor.x} ${anchor.y} C ${anchor.x + bend * 0.42} ${anchor.y + 16}, ${anchor.x + bend} ${anchor.y + 34}, ${anchor.x + bend * 0.55} ${anchor.end}`)
-        }
+        // Move the body, knot, and its already-drawn string as one SVG unit.
+        // This keeps the attachment point identical in both drawing and idle motion.
+        if (group) group.setAttribute('transform', `translate(${x} ${y})`)
       })
       balloonRaf.current = requestAnimationFrame(animateBalloons)
     }
@@ -137,10 +125,10 @@ export default function Page() {
         {line('candles', 'M276 277V225M289 277V225M276 225h13M274 267c5 5 10 5 16 0', 'candle-blue')}{line('candles', 'M402 277V225M415 277V225M402 225h13M400 267c5 5 10 5 16 0', 'candle-lavender')}{line('candles', 'M282.5 225v-9M408.5 225v-9', 'wick')}
         {line('candles', 'M282.5 216c-7-10-1-19 5-27 3 9 11 14 7 23-2 5-7 8-12 4Z', 'flame flame-one', <animate attributeName="d" dur="1.35s" repeatCount="indefinite" values="M282.5 216c-7-10-1-19 5-27 3 9 11 14 7 23-2 5-7 8-12 4Z;M282.5 216c-2-13 6-18 10-28 7 10 6 18 1 25-3 5-7 6-11 3Z;M282.5 216c-8-8-5-18 3-27 1 10 10 13 8 22-1 5-6 8-11 5Z;M282.5 216c-7-10-1-19 5-27 3 9 11 14 7 23-2 5-7 8-12 4Z" />)}
         {line('candles', 'M408.5 216c-5-9 1-17 9-25 1 9 8 14 5 22-3 6-8 7-14 3Z', 'flame flame-two', <animate attributeName="d" dur="1.8s" begin=".25s" repeatCount="indefinite" values="M408.5 216c-5-9 1-17 9-25 1 9 8 14 5 22-3 6-8 7-14 3Z;M408.5 216c-1-12 7-18 12-25 4 11 2 18-4 24-3 4-6 5-8 1Z;M408.5 216c-7-8-3-17 5-26 2 9 10 15 6 23-3 5-7 7-11 3Z;M408.5 216c-5-9 1-17 9-25 1 9 8 14 5 22-3 6-8 7-14 3Z" />)}
-        <g className="balloon balloon-one" ref={(element) => registerBalloonGroup(element, 0)}>{line('bubbles', 'M130 220c-14-2-23-15-21-30 2-17 15-29 31-29 17 0 29 12 30 29 1 15-8 28-22 30-18 3-18 3-18 0Z', 'balloon-body')}{line('bubbles', 'M130 220l-5 9 5 7 5-7-5-9Z', 'balloon-knot')}{line('bubbles', 'M130 236 C 133 252, 126 270, 130 292', 'balloon-string', undefined, (element) => registerBalloonString(element, 0))}</g>
-        <g className="balloon balloon-two" ref={(element) => registerBalloonGroup(element, 1)}>{line('bubbles', 'M560 270c-19-3-31-18-29-39 2-22 20-37 41-37 22 0 39 15 40 37 2 20-11 36-30 39-22 4-22 4-22 0Z', 'balloon-body')}{line('bubbles', 'M560 270l-6 10 6 8 6-8-6-10Z', 'balloon-knot')}{line('bubbles', 'M560 288 C 565 307, 552 328, 560 354', 'balloon-string', undefined, (element) => registerBalloonString(element, 1))}</g>
-        <g className="balloon balloon-three" ref={(element) => registerBalloonGroup(element, 2)}>{line('bubbles', 'M108 335c-8-1-13-8-12-17 1-10 8-17 18-17 9 0 16 7 17 17 1 9-5 16-13 17-10 2-10 2-10 0Z', 'balloon-body')}{line('bubbles', 'M108 335l-3 6 3 5 3-5-3-6Z', 'balloon-knot')}{line('bubbles', 'M108 346 C 111 359, 105 371, 108 388', 'balloon-string', undefined, (element) => registerBalloonString(element, 2))}</g>
-        <g className="balloon balloon-four" ref={(element) => registerBalloonGroup(element, 3)}>{line('bubbles', 'M598 375c-10-2-17-10-16-21 1-12 10-20 22-20 12 0 21 8 22 20 1 11-6 19-17 21-12 2-12 2-12 0Z', 'balloon-body')}{line('bubbles', 'M598 375l-4 7 4 6 4-6-4-7Z', 'balloon-knot')}{line('bubbles', 'M598 388 C 602 402, 594 418, 598 438', 'balloon-string', undefined, (element) => registerBalloonString(element, 3))}</g>
+        <g className="balloon balloon-one" ref={(element) => registerBalloonGroup(element, 0)}>{line('bubbles', 'M130 220c-14-2-23-15-21-30 2-17 15-29 31-29 17 0 29 12 30 29 1 15-8 28-22 30-18 3-18 3-18 0Z', 'balloon-body')}{line('bubbles', 'M130 220l-5 9 5 7 5-7-5-9Z', 'balloon-knot')}{line('bubbles', 'M130 236 C 133 252, 126 270, 130 292', 'balloon-string')}</g>
+        <g className="balloon balloon-two" ref={(element) => registerBalloonGroup(element, 1)}>{line('bubbles', 'M560 270c-19-3-31-18-29-39 2-22 20-37 41-37 22 0 39 15 40 37 2 20-11 36-30 39-22 4-22 4-22 0Z', 'balloon-body')}{line('bubbles', 'M560 270l-6 10 6 8 6-8-6-10Z', 'balloon-knot')}{line('bubbles', 'M560 288 C 565 307, 552 328, 560 354', 'balloon-string')}</g>
+        <g className="balloon balloon-three" ref={(element) => registerBalloonGroup(element, 2)}>{line('bubbles', 'M108 335c-8-1-13-8-12-17 1-10 8-17 18-17 9 0 16 7 17 17 1 9-5 16-13 17-10 2-10 2-10 0Z', 'balloon-body')}{line('bubbles', 'M108 335l-3 6 3 5 3-5-3-6Z', 'balloon-knot')}{line('bubbles', 'M108 346 C 111 359, 105 371, 108 388', 'balloon-string')}</g>
+        <g className="balloon balloon-four" ref={(element) => registerBalloonGroup(element, 3)}>{line('bubbles', 'M598 375c-10-2-17-10-16-21 1-12 10-20 22-20 12 0 21 8 22 20 1 11-6 19-17 21-12 2-12 2-12 0Z', 'balloon-body')}{line('bubbles', 'M598 375l-4 7 4 6 4-6-4-7Z', 'balloon-knot')}{line('bubbles', 'M598 388 C 602 402, 594 418, 598 438', 'balloon-string')}</g>
         {line('fireworks', 'M92 194l14-14M608 194l-14-14M105 180l3 9 9 3-9 3-3 9-3-9-9-3 9-3Z')}
         <g className={`envelope ${completed ? 'envelope-ready' : ''}`} onClick={() => completed && setOpen(true)} role="button" tabIndex={completed ? 0 : -1} aria-disabled={!completed} aria-label="Mở lá thư">{line('envelope', 'M245 535h210v42H245z')}{line('envelope', 'm245 535 105 29 105-29M245 577l77-31M455 577l-77-31')}{<circle cx="350" cy="558" r="7" />}</g>
         {pen && <circle className="pen-tip" cx={pen.x} cy={pen.y} r="3" />}
