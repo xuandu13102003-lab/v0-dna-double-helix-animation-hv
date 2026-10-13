@@ -48,9 +48,12 @@ function ShootingStars() {
           dx: (Math.random() > .5 ? 1 : -1) * (30 + Math.random() * 50),
           dy: 18 + Math.random() * 32,
           duration: 1500 + Math.random() * 1300,
+          trail: 12 + Math.random() * 13,
         }
         element.style.left = `${motion.x}%`
         element.style.top = `${motion.y}%`
+        element.style.setProperty('--particle-trail-angle', `${Math.atan2(-motion.dy, -motion.dx) * 180 / Math.PI}deg`)
+        element.style.setProperty('--particle-trail-length', `${motion.trail}px`)
         const animation = element.animate([
           { opacity: 0, transform: 'translate(0, 0) scale(.65)' },
           { opacity: .72, transform: 'translate(8px, 5px) scale(1)', offset: .2 },
