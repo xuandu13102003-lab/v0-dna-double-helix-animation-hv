@@ -32,6 +32,7 @@ const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt b
 function ShootingStars() {
   const stars = useRef<(HTMLSpanElement | null)[]>([])
   const timers = useRef<number[]>([])
+  const firstLaunch = useRef(true)
 
   useEffect(() => {
     const sky = stars.current[0]?.parentElement
@@ -45,16 +46,17 @@ function ShootingStars() {
       if (!star) return
       const width = sky.clientWidth
       const height = sky.clientHeight
-      const angle = 24 + Math.random() * 42
-      const direction = Math.random() > 0.48 ? 1 : -1
-      const distanceX = 38 + Math.random() * Math.min(130, width * 0.24)
-      const distanceY = 24 + Math.random() * Math.min(90, height * 0.2)
-      const startX = direction > 0
+      const deterministic = index === 0 && firstLaunch.current
+      const angle = deterministic ? 32 : 24 + Math.random() * 42
+      const direction = deterministic ? 1 : (Math.random() > 0.48 ? 1 : -1)
+      const distanceX = deterministic ? Math.min(150, Math.max(110, width * 0.2)) : 38 + Math.random() * Math.min(130, width * 0.24)
+      const distanceY = deterministic ? Math.min(72, Math.max(54, height * 0.14)) : 24 + Math.random() * Math.min(90, height * 0.2)
+      const startX = deterministic ? Math.min(width - 80, Math.max(110, width * 0.46)) : direction > 0
         ? 8 + Math.random() * Math.max(20, width * 0.65)
         : width - 8 - Math.random() * Math.max(20, width * 0.65)
-      const startY = 6 + Math.random() * Math.max(24, height * 0.3)
-      const duration = 900 + Math.random() * 500
-      const color = ['var(--ice)', 'var(--lavender)', 'var(--ivory)'][Math.floor(Math.random() * 3)]
+      const startY = deterministic ? Math.min(105, Math.max(42, height * 0.12)) : 6 + Math.random() * Math.max(24, height * 0.3)
+      const duration = deterministic ? 1800 : 900 + Math.random() * 500
+      const color = deterministic ? 'var(--ice)' : ['var(--ice)', 'var(--lavender)', 'var(--ivory)'][Math.floor(Math.random() * 3)]
       const directionX = direction * distanceX
 
       star.style.setProperty('--star-x', `${startX}px`)
@@ -65,6 +67,7 @@ function ShootingStars() {
       star.style.setProperty('--star-duration', `${duration}ms`)
       star.style.setProperty('--star-trail', `${26 + Math.random() * 34}px`)
       star.style.setProperty('--star-color', color)
+      if (deterministic) firstLaunch.current = false
       star.classList.remove('shooting-star-active')
       void star.offsetWidth
       star.classList.add('shooting-star-active')
