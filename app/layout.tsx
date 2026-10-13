@@ -1,6 +1,14 @@
 import { Analytics } from '@vercel/analytics/next'
+import { Be_Vietnam_Pro } from 'next/font/google'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+
+const vietnameseFont = Be_Vietnam_Pro({
+  weight: ['400', '600', '700'],
+  subsets: ['latin', 'vietnamese'],
+  display: 'swap',
+  variable: '--font-vietnamese',
+})
 
 export const metadata: Metadata = {
   title: 'For Bảo Ngọc — A Hand-Drawn Birthday Cake',
@@ -40,7 +48,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      <body className="antialiased">
+      <body className={`${vietnameseFont.variable} antialiased`}>
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
