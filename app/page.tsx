@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 
 type StrokeState = 'pending' | 'drawing' | 'complete'
-type Geometry = SVGPathElement | SVGCircleElement | SVGEllipseElement | SVGRectElement
+type Geometry = SVGPathElement
 
 function getGeometryLength(element: Geometry) {
   try {
@@ -44,18 +44,45 @@ export default function Page() {
   const replay = useCallback(() => {
     runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setDrawing(true); setStates(groups.map(() => 'pending'))
     const ordered = geometries.current.filter((element) => getGeometryLength(element) !== null)
-    ordered.forEach((element) => { const length = getGeometryLength(element); if (length === null) return; element.style.strokeDasharray = `${length}`; element.style.strokeDashoffset = `${length}`; element.style.opacity = '0' })
+    const lengths = ordered.map((element) => getGeometryLength(element) as number)
+    const gap = 32
+    const available = 14200
+    const lengthBudget = Math.max(1, available - gap * Math.max(0, ordered.length - 1))
+    const pixelsPerMillisecond = lengths.reduce((sum, length) => sum + length, 0) / lengthBudget
+    ordered.forEach((element, pathIndex) => {
+      const length = lengths[pathIndex]
+      element.style.strokeDasharray = `${length}`
+      element.style.strokeDashoffset = `${length}`
+      element.style.opacity = '0'
+    })
     let index = 0; let started = 0; let currentGroup = ''
     const draw = (now: number) => {
       if (id !== runId.current) return
       const element = ordered[index]
       if (!element) { setDrawing(false); setPen(null); return }
-      if (element.dataset.group !== currentGroup) { currentGroup = element.dataset.group || ''; const groupIndex = groups.indexOf(currentGroup as typeof groups[number]); setStates((s) => s.map((v, i) => i === groupIndex ? 'drawing' : v)); started = now + (index ? 130 : 0) }
-      const length = getGeometryLength(element)
-      if (length === null) { index += 1; raf.current = requestAnimationFrame(draw); return }
-      const duration = Math.max(520, length * 8); const progress = Math.min(1, Math.max(0, (now - started) / duration)); element.style.opacity = '1'; element.style.strokeDashoffset = `${length * (1 - progress)}`
-      const point = element.getPointAtLength(length * progress); setPen({ x: point.x, y: point.y })
-      if (progress >= 1) { const finishedGroup = element.dataset.group; index += 1; if (ordered[index]?.dataset.group !== finishedGroup) { const groupIndex = groups.indexOf(finishedGroup as typeof groups[number]); setStates((s) => s.map((v, i) => i === groupIndex ? 'complete' : v)) }; started = now + 120 }
+      if (element.dataset.group !== currentGroup) {
+        currentGroup = element.dataset.group || ''
+        const groupIndex = groups.indexOf(currentGroup as typeof groups[number])
+        setStates((s) => s.map((v, i) => i === groupIndex ? 'drawing' : v))
+        started = now + (index ? gap : 0)
+      }
+      const length = lengths[index]
+      const duration = Math.max(70, length / pixelsPerMillisecond)
+      const progress = Math.min(1, Math.max(0, (now - started) / duration))
+      element.style.opacity = '1'
+      element.style.strokeDashoffset = `${length * (1 - progress)}`
+      const point = element.getPointAtLength(length * progress)
+      setPen({ x: point.x, y: point.y })
+      if (progress >= 1) {
+        element.style.strokeDashoffset = '0'
+        const finishedGroup = element.dataset.group
+        index += 1
+        if (ordered[index]?.dataset.group !== finishedGroup) {
+          const groupIndex = groups.indexOf(finishedGroup as typeof groups[number])
+          setStates((s) => s.map((v, i) => i === groupIndex ? 'complete' : v))
+        }
+        started = now + gap
+      }
       raf.current = requestAnimationFrame(draw)
     }
     raf.current = requestAnimationFrame(draw)
@@ -108,7 +135,7 @@ export default function Page() {
         <g className="balloon balloon-three" ref={(element) => registerBalloonGroup(element, 2)}>{line('bubbles', 'M108 335c-8-1-13-8-12-17 1-10 8-17 18-17 9 0 16 7 17 17 1 9-5 16-13 17-10 2-10 2-10 0Z', 'balloon-body')}{line('bubbles', 'M108 335l-3 6 3 5 3-5-3-6Z', 'balloon-knot')}{line('bubbles', 'M108 346 C 111 359, 105 371, 108 388', 'balloon-string', undefined, (element) => registerBalloonString(element, 2))}</g>
         <g className="balloon balloon-four" ref={(element) => registerBalloonGroup(element, 3)}>{line('bubbles', 'M598 375c-10-2-17-10-16-21 1-12 10-20 22-20 12 0 21 8 22 20 1 11-6 19-17 21-12 2-12 2-12 0Z', 'balloon-body')}{line('bubbles', 'M598 375l-4 7 4 6 4-6-4-7Z', 'balloon-knot')}{line('bubbles', 'M598 388 C 602 402, 594 418, 598 438', 'balloon-string', undefined, (element) => registerBalloonString(element, 3))}</g>
         {line('fireworks', 'M92 194l14-14M608 194l-14-14M105 180l3 9 9 3-9 3-3 9-3-9-9-3 9-3Z')}
-        <g className={`envelope ${completed ? 'envelope-ready' : ''}`} onClick={() => completed && setOpen(true)} role="button" tabIndex={completed ? 0 : -1} aria-disabled={!completed} aria-label="Mở lá thư">{line('envelope', 'M245 535h210v42H245z')}{line('envelope', 'm245 535 105 29 105-29M245 577l77-31M455 577l-77-31')}{<circle ref={register} data-stroke data-group="envelope" cx="350" cy="558" r="7" />}</g>
+        <g className={`envelope ${completed ? 'envelope-ready' : ''}`} onClick={() => completed && setOpen(true)} role="button" tabIndex={completed ? 0 : -1} aria-disabled={!completed} aria-label="Mở lá thư">{line('envelope', 'M245 535h210v42H245z')}{line('envelope', 'm245 535 105 29 105-29M245 577l77-31M455 577l-77-31')}{<circle cx="350" cy="558" r="7" />}</g>
         {pen && <circle className="pen-tip" cx={pen.x} cy={pen.y} r="3" />}
       </svg>
       {completed && !open && <button className="hint" onClick={() => setOpen(true)}>Tap the letter to open</button>}
