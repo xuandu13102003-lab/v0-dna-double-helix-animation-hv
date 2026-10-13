@@ -5,6 +5,16 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 type StrokeState = 'pending' | 'drawing' | 'complete'
 type Geometry = SVGPathElement | SVGCircleElement | SVGEllipseElement | SVGRectElement
 
+function getGeometryLength(element: Geometry) {
+  try {
+    if (!element.isConnected || !element.getClientRects().length) return null
+    const length = element.getTotalLength()
+    return Number.isFinite(length) && length > 0 ? length : null
+  } catch {
+    return null
+  }
+}
+
 const groups = ['plate', 'layers', 'cream', 'berries', 'candles', 'bubbles', 'fireworks', 'envelope'] as const
 const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng, giữ vững phong độ và ngủ cười khà khà thật nhiều. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa'
 
@@ -29,15 +39,17 @@ export default function Page() {
   const register = (element: Geometry | null) => { if (element && !geometries.current.includes(element)) geometries.current.push(element) }
   const replay = useCallback(() => {
     runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setDrawing(true); setStates(groups.map(() => 'pending'))
-    const ordered = geometries.current
-    ordered.forEach((element) => { const length = element.getTotalLength(); element.style.strokeDasharray = `${length}`; element.style.strokeDashoffset = `${length}`; element.style.opacity = '0' })
+    const ordered = geometries.current.filter((element) => getGeometryLength(element) !== null)
+    ordered.forEach((element) => { const length = getGeometryLength(element); if (length === null) return; element.style.strokeDasharray = `${length}`; element.style.strokeDashoffset = `${length}`; element.style.opacity = '0' })
     let index = 0; let started = 0; let currentGroup = ''
     const draw = (now: number) => {
       if (id !== runId.current) return
       const element = ordered[index]
       if (!element) { setDrawing(false); setPen(null); return }
       if (element.dataset.group !== currentGroup) { currentGroup = element.dataset.group || ''; const groupIndex = groups.indexOf(currentGroup as typeof groups[number]); setStates((s) => s.map((v, i) => i === groupIndex ? 'drawing' : v)); started = now + (index ? 130 : 0) }
-      const length = element.getTotalLength(); const duration = Math.max(650, length * 10); const progress = Math.min(1, Math.max(0, (now - started) / duration)); element.style.opacity = '1'; element.style.strokeDashoffset = `${length * (1 - progress)}`
+      const length = getGeometryLength(element)
+      if (length === null) { index += 1; raf.current = requestAnimationFrame(draw); return }
+      const duration = Math.max(650, length * 10); const progress = Math.min(1, Math.max(0, (now - started) / duration)); element.style.opacity = '1'; element.style.strokeDashoffset = `${length * (1 - progress)}`
       const point = element.getPointAtLength(length * progress); setPen({ x: point.x, y: point.y })
       if (progress >= 1) { const finishedGroup = element.dataset.group; index += 1; if (ordered[index]?.dataset.group !== finishedGroup) { const groupIndex = groups.indexOf(finishedGroup as typeof groups[number]); setStates((s) => s.map((v, i) => i === groupIndex ? 'complete' : v)) }; started = now + 120 }
       raf.current = requestAnimationFrame(draw)
