@@ -14,9 +14,11 @@ function getGeometryLength(element: Geometry) {
     const previousVisibility = element.style.visibility
     element.style.opacity = '1'
     element.style.visibility = 'visible'
+    element.style.display = 'inline'
     const length = element.getTotalLength()
     element.style.opacity = previousOpacity
     element.style.visibility = previousVisibility
+    element.style.display = ''
     return Number.isFinite(length) && length > 0 ? length : null
   } catch {
     element.style.opacity = '0'
@@ -24,8 +26,8 @@ function getGeometryLength(element: Geometry) {
   }
 }
 
-const groups = ['plate', 'layers', 'cream', 'berries', 'candles', 'bubbles', 'fireworks', 'envelope'] as const
-const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng, giữ vững phong độ và ngủ cười khà khà thật nhiều. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa'
+const groups = ['plate', 'layers', 'cream', 'candles', 'berries', 'bubbles', 'fireworks', 'envelope'] as const
+const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng nhaa, giữ vững phong độ và ngủ cười khà khà thật nhiềuuu. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa 💖💖'
 
 function Fireworks({ active }: { active: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null)
@@ -52,11 +54,15 @@ export default function Page() {
   const registerBalloonString = (element: Geometry | null, index: number) => { balloonStrings.current[index] = element; register(element) }
   const replay = useCallback(() => {
     runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setDrawing(true); setStates(groups.map(() => 'pending'))
-    const ordered = geometries.current.filter((element) => getGeometryLength(element) !== null)
-    const lengths = ordered.map((element) => getGeometryLength(element) as number)
-    const gap = 36
+    const groupOrder = new Map(groups.map((group, index) => [group, index]))
+    const ordered = geometries.current
+      .filter((element) => getGeometryLength(element) !== null)
+      .sort((a, b) => (groupOrder.get(a.dataset.group || '') ?? 99) - (groupOrder.get(b.dataset.group || '') ?? 99))
+    const lengths = ordered.map((element) => getGeometryLength(element) ?? 1)
+    const gap = 24
     const available = 30000
-    const lengthBudget = Math.max(1, available - gap * Math.max(0, ordered.length - 1))
+    const minimumStrokeDuration = 24
+    const lengthBudget = Math.max(1, available - gap * Math.max(0, ordered.length - 1) - minimumStrokeDuration * ordered.length)
     const pixelsPerMillisecond = lengths.reduce((sum, length) => sum + length, 0) / lengthBudget
     ordered.forEach((element, pathIndex) => {
       const length = lengths[pathIndex]
@@ -76,7 +82,7 @@ export default function Page() {
         started = now + (index ? gap : 0)
       }
       const length = lengths[index]
-      const duration = Math.max(70, length / pixelsPerMillisecond)
+      const duration = Math.max(minimumStrokeDuration, length / pixelsPerMillisecond)
       const progress = Math.min(1, Math.max(0, (now - started) / duration))
       element.style.opacity = '1'
       element.style.strokeDashoffset = `${length * (1 - progress)}`
@@ -152,8 +158,9 @@ export default function Page() {
         {line('layers', 'M178 420v62c38 26 306 26 344 0v-62')}{line('layers', 'M178 420c24 29 320 29 344 0')}{line('layers', 'M205 345v75c35 24 255 24 290 0v-75')}{line('layers', 'M205 345c22 26 268 26 290 0')}{line('layers', 'M237 277v68c29 21 197 21 226 0v-68')}{line('layers', 'M237 277c22 24 204 24 226 0')}
         {line('cream', 'M237 277c8 32 17 36 27 0 10 42 23 48 34 0 10 28 25 34 37 0 12 42 27 43 40 0 13 31 29 34 42 0 11 37 27 38 46 0', 'cream-line')}{line('cream', 'M205 345c11 38 21 42 33 0 12 29 27 34 39 0 15 43 28 43 42 0 13 27 28 34 43 0 14 41 30 43 46 0 12 30 25 34 42 0 13 39 28 42 43 0 11 29 25 34 2 0', 'cream-line')}
         {line('berries', 'M275 270c-10-19 5-32 17-15 8-20 27-9 19 11')}{line('berries', 'M394 270c-10-19 5-32 17-15 8-20 27-9 19 11')}{line('berries', 'M298 236c-8-23 15-31 20-11 8-22 29-8 18 12')}
-        {line('candles', 'M276 277V225M289 277V225M276 225h13M274 267c5 5 10 5 16 0', 'candle-blue')}{line('candles', 'M402 277V225M415 277V225M402 225h13M400 267c5 5 10 5 16 0', 'candle-lavender')}{line('candles', 'M282.5 225v-9M408.5 225v-9', 'wick')}
+        {line('candles', 'M276 277V225M289 277V225M276 225h13M274 267c5 5 10 5 16 0', 'candle-blue')}{line('candles', 'M282.5 225v-9', 'wick')}
         {line('candles', 'M282.5 216c-7-10-1-19 5-27 3 9 11 14 7 23-2 5-7 8-12 4Z', 'flame flame-one', <animate attributeName="d" dur="1.35s" repeatCount="indefinite" values="M282.5 216c-7-10-1-19 5-27 3 9 11 14 7 23-2 5-7 8-12 4Z;M282.5 216c-2-13 6-18 10-28 7 10 6 18 1 25-3 5-7 6-11 3Z;M282.5 216c-8-8-5-18 3-27 1 10 10 13 8 22-1 5-6 8-11 5Z;M282.5 216c-7-10-1-19 5-27 3 9 11 14 7 23-2 5-7 8-12 4Z" />)}
+        {line('candles', 'M402 277V225M415 277V225M402 225h13M400 267c5 5 10 5 16 0', 'candle-lavender')}{line('candles', 'M408.5 225v-9', 'wick')}
         {line('candles', 'M408.5 216c-5-9 1-17 9-25 1 9 8 14 5 22-3 6-8 7-14 3Z', 'flame flame-two', <animate attributeName="d" dur="1.8s" begin=".25s" repeatCount="indefinite" values="M408.5 216c-5-9 1-17 9-25 1 9 8 14 5 22-3 6-8 7-14 3Z;M408.5 216c-1-12 7-18 12-25 4 11 2 18-4 24-3 4-6 5-8 1Z;M408.5 216c-7-8-3-17 5-26 2 9 10 15 6 23-3 5-7 7-11 3Z;M408.5 216c-5-9 1-17 9-25 1 9 8 14 5 22-3 6-8 7-14 3Z" />)}
         <g className="balloon balloon-one" ref={(element) => registerBalloonGroup(element, 0)}>{line('bubbles', 'M130 220c-14-2-23-15-21-30 2-17 15-29 31-29 17 0 29 12 30 29 1 15-8 28-22 30-18 3-18 3-18 0Z', 'balloon-body')}{line('bubbles', 'M130 220l-5 9 5 7 5-7-5-9Z', 'balloon-knot')}{line('bubbles', 'M130 236 C 133 252, 126 270, 130 292', 'balloon-string', undefined, (element) => registerBalloonString(element, 0))}</g>
         <g className="balloon balloon-two" ref={(element) => registerBalloonGroup(element, 1)}>{line('bubbles', 'M560 270c-19-3-31-18-29-39 2-22 20-37 41-37 22 0 39 15 40 37 2 20-11 36-30 39-22 4-22 4-22 0Z', 'balloon-body')}{line('bubbles', 'M560 270l-6 10 6 8 6-8-6-10Z', 'balloon-knot')}{line('bubbles', 'M560 288 C 565 307, 552 328, 560 354', 'balloon-string', undefined, (element) => registerBalloonString(element, 1))}</g>
@@ -164,7 +171,7 @@ export default function Page() {
         {pen && <circle className="pen-tip" cx={pen.x} cy={pen.y} r="3" />}
       </svg>
       {completed && !open && <button className="hint" onClick={() => setOpen(true)}>Tap the letter to open</button>}
-      {open && <div className="letter" role="dialog" aria-label="Lá thư chúc mừng"><button className="close" onClick={() => setOpen(false)} aria-label="Đóng thư">×</button><p className="letter-kicker">gửi Bảo Ngọc,</p><svg className="handwriting" viewBox="0 0 360 260" role="img" aria-label={message}><text x="180" y="25" textAnchor="middle"><tspan x="180" dy="0">Chúc người bạn thiên tài</tspan><tspan x="180" dy="31">super cute siêu cấp tốt bụng</tspan><tspan x="180" dy="31">tuổi mới luôn đầy năng lượng,</tspan><tspan x="180" dy="31">giữ vững phong độ và ngủ cười</tspan><tspan x="180" dy="31">khà khà thật nhiều. Hơn hết là</tspan><tspan x="180" dy="31">nhớ ăn uống thật đầy đủ nhaaaaaaaa</tspan></text></svg><p className="signature">— người bạn cùng học</p></div>}
+      {open && <div className="letter" role="dialog" aria-label="Lá thư chúc mừng"><button className="close" onClick={() => setOpen(false)} aria-label="Đóng thư">×</button><p className="letter-kicker">gửi Bảo Ngọc,</p><svg className="handwriting" viewBox="0 0 360 260" role="img" aria-label={message}><text x="180" y="25" textAnchor="middle"><tspan x="180" dy="0">Chúc người bạn thiên tài super cute</tspan><tspan x="180" dy="31">siêu cấp tốt bụng tuổi mới luôn đầy</tspan><tspan x="180" dy="31">năng lượng nhaa, giữ vững phong độ</tspan><tspan x="180" dy="31">và ngủ cười khà khà thật nhiềuuu.</tspan><tspan x="180" dy="31">Hơn hết là nhớ ăn uống thật đầy đủ</tspan><tspan x="180" dy="31">nhaaaaaaaa 💖💖</tspan></text></svg><p className="signature">— người bạn cùng học</p></div>}
     </section>
     <nav className="controls" aria-label="Điều khiển"><button onClick={replay}>Replay Drawing</button><button onClick={() => completed && setOpen(true)} disabled={!completed}>Open Letter</button></nav><p className="status" aria-live="polite">{drawing ? 'the pen is still wandering…' : 'all lines are in place'}</p>
   </main>
