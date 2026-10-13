@@ -73,7 +73,8 @@ function ShootingStars() {
     }
 
     const handleResize = () => {
-      stars.current.forEach((star) => star?.classList.remove('shooting-star-active'))
+      // Reflow can happen immediately after mount. Do not remove an active star here:
+      // ResizeObserver otherwise cancels the guaranteed first launch before it is visible.
       timers.current.forEach(window.clearTimeout)
       timers.current = []
       stars.current.forEach((_, index) => {
