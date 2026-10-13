@@ -30,75 +30,8 @@ const groups = ['plate', 'layers', 'cream', 'candles', 'berries', 'bubbles', 'fi
 const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng nhaa, giữ vững phong độ và ngủ cười khà khà thật nhiềuuu. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa 💖💖'
 
 function ShootingStars() {
-  const stars = useRef<(HTMLSpanElement | null)[]>([])
-  const timers = useRef<number[]>([])
-  const firstLaunch = useRef(true)
-
-  useEffect(() => {
-    const sky = stars.current[0]?.parentElement
-    if (!sky || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    let cancelled = false
-    let resizeObserver: ResizeObserver | undefined
-
-    const launch = (index: number) => {
-      if (cancelled) return
-      const star = stars.current[index]
-      if (!star) return
-      const width = sky.clientWidth
-      const height = sky.clientHeight
-      const deterministic = index === 0 && firstLaunch.current
-      const angle = deterministic ? 32 : 24 + Math.random() * 42
-      const direction = deterministic ? 1 : (Math.random() > 0.48 ? 1 : -1)
-      const distanceX = deterministic ? Math.min(150, Math.max(110, width * 0.2)) : 38 + Math.random() * Math.min(130, width * 0.24)
-      const distanceY = deterministic ? Math.min(72, Math.max(54, height * 0.14)) : 24 + Math.random() * Math.min(90, height * 0.2)
-      const startX = deterministic ? Math.min(width - 80, Math.max(110, width * 0.46)) : direction > 0
-        ? 8 + Math.random() * Math.max(20, width * 0.65)
-        : width - 8 - Math.random() * Math.max(20, width * 0.65)
-      const startY = deterministic ? Math.min(105, Math.max(42, height * 0.12)) : 6 + Math.random() * Math.max(24, height * 0.3)
-      const duration = deterministic ? 1800 : 900 + Math.random() * 500
-      const color = deterministic ? 'var(--ice)' : ['var(--ice)', 'var(--lavender)', 'var(--ivory)'][Math.floor(Math.random() * 3)]
-      const directionX = direction * distanceX
-
-      star.style.setProperty('--star-x', `${startX}px`)
-      star.style.setProperty('--star-y', `${startY}px`)
-      star.style.setProperty('--star-dx', `${directionX}px`)
-      star.style.setProperty('--star-dy', `${distanceY}px`)
-      star.style.setProperty('--star-angle', `${direction > 0 ? angle : 180 - angle}deg`)
-      star.style.setProperty('--star-duration', `${duration}ms`)
-      star.style.setProperty('--star-trail', `${26 + Math.random() * 34}px`)
-      star.style.setProperty('--star-color', color)
-      if (deterministic) firstLaunch.current = false
-      star.classList.remove('shooting-star-active')
-      void star.offsetWidth
-      star.classList.add('shooting-star-active')
-      const nextDelay = 1600 + Math.random() * 5200
-      timers.current[index] = window.setTimeout(() => launch(index), duration + nextDelay)
-    }
-
-    const handleResize = () => {
-      // Reflow can happen immediately after mount. Do not remove an active star here:
-      // ResizeObserver otherwise cancels the guaranteed first launch before it is visible.
-      timers.current.forEach(window.clearTimeout)
-      timers.current = []
-      stars.current.forEach((_, index) => {
-        timers.current[index] = window.setTimeout(() => launch(index), 500 + index * 1100 + Math.random() * 2200)
-      })
-    }
-
-    resizeObserver = new ResizeObserver(handleResize)
-    resizeObserver.observe(sky)
-    handleResize()
-    // Launch one immediately so the effect is visible as soon as the scene mounts.
-    launch(0)
-    return () => {
-      cancelled = true
-      timers.current.forEach(window.clearTimeout)
-      resizeObserver?.disconnect()
-    }
-  }, [])
-
   return <div className="shooting-stars" aria-hidden="true">
-    {[0, 1, 2, 3].map((index) => <span key={index} ref={(element) => { stars.current[index] = element }} className="shooting-star" />)}
+    <span className="shooting-star star-one" /><span className="shooting-star star-two" /><span className="shooting-star star-three" /><span className="shooting-star star-four" />
   </div>
 }
 
