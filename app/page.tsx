@@ -45,8 +45,8 @@ export default function Page() {
     runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setDrawing(true); setStates(groups.map(() => 'pending'))
     const ordered = geometries.current.filter((element) => getGeometryLength(element) !== null)
     const lengths = ordered.map((element) => getGeometryLength(element) as number)
-    const gap = 32
-    const available = 14200
+    const gap = 36
+    const available = 30000
     const lengthBudget = Math.max(1, available - gap * Math.max(0, ordered.length - 1))
     const pixelsPerMillisecond = lengths.reduce((sum, length) => sum + length, 0) / lengthBudget
     ordered.forEach((element, pathIndex) => {
@@ -100,6 +100,12 @@ export default function Page() {
         { phase: 3.1, speed: 1.12, sway: 6, lift: 10 },
         { phase: 4.6, speed: 0.84, sway: 10, lift: 16 },
       ]
+      const strings = [
+        { x: 130, y: 236, end: 292 },
+        { x: 560, y: 288, end: 354 },
+        { x: 108, y: 346, end: 388 },
+        { x: 598, y: 388, end: 438 },
+      ]
       motion.forEach((balloon, index) => {
         const wave = elapsed * balloon.speed + balloon.phase
         const x = Math.sin(wave) * balloon.sway
@@ -108,8 +114,9 @@ export default function Page() {
         const string = balloonStrings.current[index]
         if (group) group.style.transform = `translate(${x}px, ${y}px)`
         if (string) {
-          const lag = Math.sin(wave - 0.55) * balloon.sway * 0.72
-          string.setAttribute('d', `M0 32 C ${lag * 0.42} 48, ${lag} 70, ${lag * 0.55} 96`)
+          const anchor = strings[index]
+          const bend = Math.sin(wave - 0.55) * balloon.sway * 0.72
+          string.setAttribute('d', `M${anchor.x} ${anchor.y} C ${anchor.x + bend * 0.42} ${anchor.y + 16}, ${anchor.x + bend} ${anchor.y + 34}, ${anchor.x + bend * 0.55} ${anchor.end}`)
         }
       })
       balloonRaf.current = requestAnimationFrame(animateBalloons)
