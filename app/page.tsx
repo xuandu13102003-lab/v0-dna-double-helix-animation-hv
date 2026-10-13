@@ -29,6 +29,12 @@ function getGeometryLength(element: Geometry) {
 const groups = ['plate', 'layers', 'cream', 'candles', 'berries', 'bubbles', 'fireworks', 'envelope'] as const
 const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng nhaa, giữ vững phong độ và ngủ cười khà khà thật nhiềuuu. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa 💖💖'
 
+function ShootingStars() {
+  return <div className="shooting-stars" aria-hidden="true">
+    <span className="shooting-star star-one" /><span className="shooting-star star-two" /><span className="shooting-star star-three" /><span className="shooting-star star-four" />
+  </div>
+}
+
 function Fireworks({ active }: { active: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
@@ -153,6 +159,7 @@ export default function Page() {
     <Fireworks active={states[6] === 'complete'} />
     <header className="intro"><p className="eyebrow">A little line of magic</p><h1>For Bảo Ngọc</h1><p className="subtitle">Một chiếc bánh được vẽ riêng cho người bạn đồng hành TOEIC.</p></header>
     <section className="scene" aria-label="Bức tranh bánh sinh nhật đang được vẽ">
+      <ShootingStars />
       <svg className="drawing" viewBox="0 0 700 600" role="img" aria-label="Một chiếc bánh sinh nhật được vẽ bằng nét mực"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
         {line('plate', 'M130 505c12 25 429 25 440 0')}{line('plate', 'M130 505c40-30 400-30 440 0')}
         {line('layers', 'M178 420v62c38 26 306 26 344 0v-62')}{line('layers', 'M178 420c24 29 320 29 344 0')}{line('layers', 'M205 345v75c35 24 255 24 290 0v-75')}{line('layers', 'M205 345c22 26 268 26 290 0')}{line('layers', 'M237 277v68c29 21 197 21 226 0v-68')}{line('layers', 'M237 277c22 24 204 24 226 0')}
