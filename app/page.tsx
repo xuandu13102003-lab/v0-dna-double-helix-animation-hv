@@ -30,8 +30,69 @@ const groups = ['plate', 'layers', 'cream', 'candles', 'berries', 'bubbles', 'fi
 const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng nhaa, giữ vững phong độ và ngủ cười khà khà thật nhiềuuu. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa 💖💖'
 
 function ShootingStars() {
+  const stars = useRef<(HTMLSpanElement | null)[]>([])
+  const timers = useRef<number[]>([])
+
+  useEffect(() => {
+    const sky = stars.current[0]?.parentElement
+    if (!sky || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    let cancelled = false
+    let resizeObserver: ResizeObserver | undefined
+
+    const launch = (index: number) => {
+      if (cancelled) return
+      const star = stars.current[index]
+      if (!star) return
+      const width = sky.clientWidth
+      const height = sky.clientHeight
+      const angle = 24 + Math.random() * 42
+      const direction = Math.random() > 0.48 ? 1 : -1
+      const distanceX = 38 + Math.random() * Math.min(130, width * 0.24)
+      const distanceY = 24 + Math.random() * Math.min(90, height * 0.2)
+      const startX = direction > 0
+        ? 8 + Math.random() * Math.max(20, width * 0.65)
+        : width - 8 - Math.random() * Math.max(20, width * 0.65)
+      const startY = 6 + Math.random() * Math.max(24, height * 0.3)
+      const duration = 1250 + Math.random() * 1250
+      const color = ['var(--ice)', 'var(--lavender)', 'var(--ivory)'][Math.floor(Math.random() * 3)]
+      const directionX = direction * distanceX
+
+      star.style.setProperty('--star-x', `${startX}px`)
+      star.style.setProperty('--star-y', `${startY}px`)
+      star.style.setProperty('--star-dx', `${directionX}px`)
+      star.style.setProperty('--star-dy', `${distanceY}px`)
+      star.style.setProperty('--star-angle', `${direction > 0 ? angle : 180 - angle}deg`)
+      star.style.setProperty('--star-duration', `${duration}ms`)
+      star.style.setProperty('--star-trail', `${26 + Math.random() * 34}px`)
+      star.style.setProperty('--star-color', color)
+      star.classList.remove('shooting-star-active')
+      void star.offsetWidth
+      star.classList.add('shooting-star-active')
+      const nextDelay = 1600 + Math.random() * 5200
+      timers.current[index] = window.setTimeout(() => launch(index), duration + nextDelay)
+    }
+
+    const handleResize = () => {
+      stars.current.forEach((star) => star?.classList.remove('shooting-star-active'))
+      timers.current.forEach(window.clearTimeout)
+      timers.current = []
+      stars.current.forEach((_, index) => {
+        timers.current[index] = window.setTimeout(() => launch(index), 500 + index * 1100 + Math.random() * 2200)
+      })
+    }
+
+    resizeObserver = new ResizeObserver(handleResize)
+    resizeObserver.observe(sky)
+    handleResize()
+    return () => {
+      cancelled = true
+      timers.current.forEach(window.clearTimeout)
+      resizeObserver?.disconnect()
+    }
+  }, [])
+
   return <div className="shooting-stars" aria-hidden="true">
-    <span className="shooting-star star-one" /><span className="shooting-star star-two" /><span className="shooting-star star-three" /><span className="shooting-star star-four" />
+    {[0, 1, 2, 3].map((index) => <span key={index} ref={(element) => { stars.current[index] = element }} className="shooting-star" />)}
   </div>
 }
 
