@@ -30,8 +30,55 @@ const groups = ['plate', 'layers', 'cream', 'candles', 'berries', 'bubbles', 'fi
 const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng nhaa, giữ vững phong độ và ngủ cười khà khà thật nhiềuuu. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa 💖💖'
 
 function ShootingStars() {
+  const stars = useRef<(HTMLSpanElement | null)[]>([])
+
+  useEffect(() => {
+    const elements = stars.current.filter((element): element is HTMLSpanElement => Boolean(element))
+    if (!elements.length) return
+    let frame = 0
+    let cancelled = false
+    const active = elements.map(() => ({ start: -Infinity, duration: 2600, dx: 0, dy: 0 }))
+    const launches = [
+      { delay: 0, dx: 220, dy: 130, duration: 2600 },
+      { delay: 3200, dx: -190, dy: 120, duration: 3000 },
+      { delay: 6900, dx: -170, dy: 100, duration: 2400 },
+      { delay: 9800, dx: 180, dy: 110, duration: 2800 },
+    ]
+    const startedAt = performance.now()
+
+    const launch = (index: number, now: number, preset?: typeof launches[number]) => {
+      const element = elements[index]
+      const motion = preset ?? {
+        delay: 0,
+        dx: (Math.random() > .5 ? 1 : -1) * (150 + Math.random() * 100),
+        dy: 80 + Math.random() * 80,
+        duration: 2100 + Math.random() * 1100,
+      }
+      active[index] = { start: now + motion.delay, duration: motion.duration, dx: motion.dx, dy: motion.dy }
+      element.style.opacity = '0'
+      element.style.transform = 'translate3d(0, 0, 0) rotate(var(--star-angle)) scale(.55)'
+    }
+
+    elements.forEach((_, index) => launch(index, startedAt, launches[index]))
+    const tick = (now: number) => {
+      if (cancelled) return
+      elements.forEach((element, index) => {
+        const motion = active[index]
+        if (now < motion.start) return
+        const progress = Math.min(1, (now - motion.start) / motion.duration)
+        const eased = progress < .18 ? progress / .18 : progress > .72 ? 1 - (progress - .72) / .28 : 1
+        element.style.opacity = String(Math.max(0, Math.min(1, eased)))
+        element.style.transform = `translate3d(${motion.dx * progress}px, ${motion.dy * progress}px, 0) rotate(var(--star-angle)) scale(${progress < .18 ? .55 + progress * 2.5 : .9})`
+        if (progress >= 1) launch(index, now, { delay: 850 + Math.random() * 3200, dx: (Math.random() > .5 ? 1 : -1) * (150 + Math.random() * 100), dy: 80 + Math.random() * 80, duration: 2100 + Math.random() * 1100 })
+      })
+      frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => { cancelled = true; cancelAnimationFrame(frame) }
+  }, [])
+
   return <div className="shooting-stars" aria-hidden="true">
-    <span className="shooting-star star-one" /><span className="shooting-star star-two" /><span className="shooting-star star-three" /><span className="shooting-star star-four" />
+    {["star-one", "star-two", "star-three", "star-four"].map((className, index) => <span key={className} ref={(element) => { stars.current[index] = element }} className={`shooting-star ${className}`} />)}
   </div>
 }
 
