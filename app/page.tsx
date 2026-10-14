@@ -57,7 +57,7 @@ function ShootingStars() {
           const x = motion.dx * progress; const y = motion.dy * progress
           history.push({ x, y, time: now })
           while (history.length && now - history[0].time > 260) history.shift()
-          if (dot) { dot.style.opacity = `${Math.max(0, visibility)}`; dot.style.transform = `translate(${x - 1.5}px, ${y - 1.5}px)` }
+          if (dot) { dot.style.opacity = `${Math.max(0, visibility)}`; dot.style.transform = `translate(${x}px, ${y}px)` }
           trails.forEach((trail, index) => {
             const sample = history[Math.max(0, history.length - 1 - (index + 1) * 3)]
             const age = sample ? now - sample.time : Infinity
