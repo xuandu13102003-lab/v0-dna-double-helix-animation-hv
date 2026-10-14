@@ -37,8 +37,13 @@ function frostingPath(rim: Rim, count: number, seed: number) {
   const random = () => { state = (state * 1664525 + 1013904223) >>> 0; return state / 4294967296 }
   const rimY = (x: number) => rim.cy + rim.ry * Math.sqrt(Math.max(0, 1 - ((x - rim.cx) / rim.rx) ** 2))
   const sampleRim = (from: number, to: number, step = 8) => {
-    const samples = Math.max(1, Math.ceil(Math.abs(to - from) / step)); let commands = ''
-    for (let i = 1; i <= samples; i += 1) { const x = from + (to - from) * (i / samples); commands += ` L${x.toFixed(1)} ${rimY(x).toFixed(1)}` }
+    const samples = Math.max(1, Math.ceil(Math.abs(to - from) / step)); let commands = ''; let start = from
+    for (let i = 1; i <= samples; i += 1) {
+      const end = from + (to - from) * (i / samples); const span = end - start
+      const c1 = start + span / 3; const c2 = start + (span * 2) / 3
+      commands += ` C${c1.toFixed(1)} ${rimY(c1).toFixed(1)} ${c2.toFixed(1)} ${rimY(c2).toFixed(1)} ${end.toFixed(1)} ${rimY(end).toFixed(1)}`
+      start = end
+    }
     return commands
   }
   const base = 25; const spacing = (rim.rx * 2) / (count + 1)
@@ -54,10 +59,10 @@ function frostingPath(rim: Rim, count: number, seed: number) {
   drips.forEach((drip) => {
     const left = drip.x - 2 * drip.hw; const right = drip.x + 2 * drip.hw; const y = rimY(drip.x); const neck = drip.hw * .55; const neckLeft = drip.x - neck; const neckRight = drip.x + neck; const bottom = y + drip.length; const bulbHalf = drip.hw * .65
     path += sampleRim(previous, left)
-    path += ` C${left.toFixed(1)} ${rimY(left).toFixed(1)} ${neckLeft.toFixed(1)} ${(y + drip.length * .22).toFixed(1)} ${neckLeft.toFixed(1)} ${(y + drip.length * .45).toFixed(1)}`
-    path += ` C${neckLeft.toFixed(1)} ${(bottom - drip.length * .08).toFixed(1)} ${(drip.x - bulbHalf).toFixed(1)} ${bottom.toFixed(1)} ${drip.x.toFixed(1)} ${bottom.toFixed(1)}`
-    path += ` C${(drip.x + bulbHalf).toFixed(1)} ${bottom.toFixed(1)} ${neckRight.toFixed(1)} ${(bottom - drip.length * .08).toFixed(1)} ${neckRight.toFixed(1)} ${(y + drip.length * .45).toFixed(1)}`
-    path += ` C${neckRight.toFixed(1)} ${(y + drip.length * .22).toFixed(1)} ${right.toFixed(1)} ${rimY(right).toFixed(1)} ${right.toFixed(1)} ${rimY(right).toFixed(1)}`
+    path += ` C${left.toFixed(1)} ${rimY(left).toFixed(1)} ${neckLeft.toFixed(1)} ${(y + drip.length * .16).toFixed(1)} ${neckLeft.toFixed(1)} ${(y + drip.length * .42).toFixed(1)}`
+    path += ` C${neckLeft.toFixed(1)} ${(bottom - drip.length * .12).toFixed(1)} ${(drip.x - bulbHalf).toFixed(1)} ${bottom.toFixed(1)} ${drip.x.toFixed(1)} ${bottom.toFixed(1)}`
+    path += ` C${(drip.x + bulbHalf).toFixed(1)} ${bottom.toFixed(1)} ${neckRight.toFixed(1)} ${(bottom - drip.length * .12).toFixed(1)} ${neckRight.toFixed(1)} ${(y + drip.length * .42).toFixed(1)}`
+    path += ` C${neckRight.toFixed(1)} ${(y + drip.length * .16).toFixed(1)} ${right.toFixed(1)} ${rimY(right).toFixed(1)} ${right.toFixed(1)} ${rimY(right).toFixed(1)}`
     previous = right
   })
   return path + sampleRim(previous, rim.cx + rim.rx)
