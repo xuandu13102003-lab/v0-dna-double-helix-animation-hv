@@ -128,8 +128,6 @@ export default function Page() {
   const geometries = useRef<Geometry[]>([]); const raf = useRef<number | undefined>(undefined); const balloonRaf = useRef<number | undefined>(undefined); const runId = useRef(0)
   const balloonGroups = useRef<(SVGGElement | null)[]>([])
   const activeBalloonDrawings = useRef(0)
-  const balloonDrawnRef = useRef<boolean[]>([false, false, false, false])
-  const balloonBusyRef = useRef<boolean[]>([false, false, false, false])
   const redrawQueue = useRef<number[]>([])
   const redrawJobs = useRef(new Map<number, () => void>())
   const redrawActive = useRef(false)
@@ -145,10 +143,8 @@ export default function Page() {
   const register = (element: Geometry | null) => { if (element && !geometries.current.includes(element)) geometries.current.push(element) }
   const registerBalloonGroup = (element: SVGGElement | null, index: number) => { balloonGroups.current[index] = element; if (element) balloonGeometries.current[index] = Array.from(element.querySelectorAll<Geometry>('[data-stroke]')) }
   const registerBalloonString = (element: Geometry | null, index: number) => { balloonStrings.current[index] = element; register(element) }
-  useEffect(() => { balloonDrawnRef.current = balloonDrawn }, [balloonDrawn])
-  useEffect(() => { balloonBusyRef.current = balloonBusy }, [balloonBusy])
   const replay = useCallback(() => {
-    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setPenVisible(true); redrawQueue.current = []; redrawJobs.current.clear(); redrawActive.current = false; if (redrawFrame.current) cancelAnimationFrame(redrawFrame.current); if (redrawFadeTimer.current) cancelAnimationFrame(redrawFadeTimer.current); redrawFadeTimer.current = undefined; balloonPhase.current = ['idle', 'idle', 'idle', 'idle']; setDrawing(true); setStates(groups.map(() => 'pending')); balloonDrawnRef.current = [false, false, false, false]; balloonBusyRef.current = [false, false, false, false]; setBalloonDrawn([false, false, false, false]); setBalloonBusy([false, false, false, false]); setBalloonFloating([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]; balloonSwayBlendAt.current = [0, 0, 0, 0]
+    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setPenVisible(true); redrawQueue.current = []; redrawJobs.current.clear(); redrawActive.current = false; if (redrawFrame.current) cancelAnimationFrame(redrawFrame.current); if (redrawFadeTimer.current) cancelAnimationFrame(redrawFadeTimer.current); redrawFadeTimer.current = undefined; balloonPhase.current = ['idle', 'idle', 'idle', 'idle']; setDrawing(true); setStates(groups.map(() => 'pending')); setBalloonDrawn([false, false, false, false]); setBalloonBusy([false, false, false, false]); setBalloonFloating([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]; balloonSwayBlendAt.current = [0, 0, 0, 0]
     const groupOrder = new Map(groups.map((group, index) => [group, index]))
     const ordered = geometries.current
       .filter((element) => getGeometryLength(element) !== null)
