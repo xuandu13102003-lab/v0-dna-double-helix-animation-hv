@@ -31,7 +31,6 @@ const groups = ['plate', 'layers', 'cream', 'candles', 'berries', 'bubbles', 'fi
 type Rim = { cx: number; cy: number; rx: number; ry: number }
 const upperRim: Rim = { cx: 350, cy: 277, rx: 113, ry: 24 }
 const middleRim: Rim = { cx: 350, cy: 345, rx: 145, ry: 26 }
-const rimArc = ({ cx, cy, rx, ry }: Rim) => `M${cx - rx} ${cy} A${rx} ${ry} 0 0 0 ${cx + rx} ${cy}`
 function frostingPath(rim: Rim, dripFractions: number[]) {
   const samples = 48
   const points = Array.from({ length: samples + 1 }, (_, index) => { const t = Math.PI - (Math.PI * index) / samples; return { x: rim.cx + rim.rx * Math.cos(t), y: rim.cy + rim.ry * Math.sin(t) } })
@@ -329,7 +328,7 @@ if (!balloonDrawn[index] || balloonPhase.current[index] !== 'idle') return
       <ShootingStars />
       <svg ref={drawingRef} className="drawing" viewBox="0 0 700 600" role="img" aria-label="Bức tranh bánh sinh nhật"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
         {line('plate', 'M130 505c12 25 429 25 440 0')}{line('plate', 'M130 505c40-30 400-30 440 0')}
-        {line('layers', 'M178 420v62c38 26 306 26 344 0v-62')}{line('layers', 'M178 420c24 29 320 29 344 0')}{line('layers', 'M205 345v75c35 24 255 24 290 0v-75')}{line('layers', rimArc(middleRim))}{line('layers', 'M237 277v68c29 21 197 21 226 0v-68')}{line('layers', rimArc(upperRim))}
+        {line('layers', 'M178 420v62c38 26 306 26 344 0v-62')}{line('layers', 'M178 420c24 29 320 29 344 0')}{line('layers', 'M205 345v75c35 24 255 24 290 0v-75')}{line('layers', 'M237 277v68c29 21 197 21 226 0v-68')}
         {line('cream', upperFrosting, 'cream-line')}{line('cream', middleFrosting, 'cream-line')}
         {line('berries', 'M275 270c-10-19 5-32 17-15 8-20 27-9 19 11')}{line('berries', 'M394 270c-10-19 5-32 17-15 8-20 27-9 19 11')}{line('berries', 'M298 236c-8-23 15-31 20-11 8-22 29-8 18 12')}
         {line('candles', 'M276 277V225M289 277V225M276 225h13M274 267c5 5 10 5 16 0', 'candle-blue')}{line('candles', 'M282.5 225v-9', 'wick')}
