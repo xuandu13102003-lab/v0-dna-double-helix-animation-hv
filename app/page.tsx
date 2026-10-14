@@ -49,10 +49,11 @@ function frostingPath(rim: Rim, count: number, seed: number) {
   const base = 25; const drips: Array<{ x: number; length: number; hw: number }> = []
   for (let index = 0; index < count; index += 1) {
     const fraction = (index + 1) / (count + 1); const jitter = (random() - .5) * (1 / (count + 1)) * .3
-    const t = Math.PI * Math.max(.06, Math.min(.94, fraction + jitter)); const x = rim.cx - rim.rx * Math.cos(t)
+    const t = Math.PI * Math.max(.06, Math.min(.94, fraction + jitter)); const hw = 9 + random() * 4; const edgeInset = hw * 2 + 2
+    const x = Math.max(rim.cx - rim.rx + edgeInset, Math.min(rim.cx + rim.rx - edgeInset, rim.cx - rim.rx * Math.cos(t)))
     let length = base * (.5 + random() * 1.1)
     if (index > 0 && length > base * 1.35 && drips[index - 1].length > base * 1.35) length = base * 1.1
-    drips.push({ x, length, hw: 9 + random() * 4 })
+    drips.push({ x, length, hw })
   }
   let path = `M${(rim.cx - rim.rx).toFixed(1)} ${rimY(rim.cx - rim.rx).toFixed(1)}`; let previous = rim.cx - rim.rx
   drips.forEach((drip) => {
