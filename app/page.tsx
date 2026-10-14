@@ -36,48 +36,48 @@ function ShootingStars() {
     const elements = particles.current.filter((element): element is HTMLSpanElement => Boolean(element))
     if (!elements.length) return
     let cancelled = false
-    const animations = new Set<Animation>()
+    let frame = 0
     const timers = new Set<number>()
     const launch = (element: HTMLSpanElement, delay: number) => {
       const timer = window.setTimeout(() => {
         timers.delete(timer)
         if (cancelled) return
-        const motion = {
-          x: 8 + Math.random() * 84,
-          y: 9 + Math.random() * 25,
-          dx: (Math.random() > .5 ? 1 : -1) * (30 + Math.random() * 50),
-          dy: 18 + Math.random() * 32,
-          duration: 1500 + Math.random() * 1300,
-          trail: 12 + Math.random() * 13,
+        const fixed = elements.indexOf(element) === 0
+        const motion = { x: fixed ? 22 : 8 + Math.random() * 70, y: fixed ? 12 : 9 + Math.random() * 25, dx: fixed ? 42 : (Math.random() > .5 ? 1 : -1) * (30 + Math.random() * 50), dy: fixed ? 25 : 18 + Math.random() * 32, duration: fixed ? 2200 : 1500 + Math.random() * 1300 }
+        const dot = element.querySelector<HTMLElement>('.particle-dot')
+        const trails = [...element.querySelectorAll<HTMLElement>('.particle-trail')]
+        const history: { x: number; y: number; time: number }[] = []
+        const angle = Math.atan2(motion.dy, motion.dx)
+        element.style.left = `${motion.x}%`; element.style.top = `${motion.y}%`
+        const started = performance.now()
+        const update = (now: number) => {
+          if (cancelled) return
+          const progress = Math.min(1, (now - started) / motion.duration)
+          const visibility = progress < .1 ? progress / .1 : progress > .9 ? (1 - progress) / .1 : 1
+          const x = motion.dx * progress; const y = motion.dy * progress
+          history.push({ x, y, time: now })
+          while (history.length && now - history[0].time > 260) history.shift()
+          if (dot) { dot.style.opacity = `${Math.max(0, visibility)}`; dot.style.transform = `translate(${x - 1.5}px, ${y - 1.5}px)` }
+          trails.forEach((trail, index) => {
+            const sample = history[Math.max(0, history.length - 1 - (index + 1) * 3)]
+            const age = sample ? now - sample.time : Infinity
+            const alpha = sample ? Math.max(0, visibility * (1 - age / 300) * (1 - index * .18)) : 0
+            trail.style.opacity = `${alpha}`
+            trail.style.transform = sample ? `translate(${sample.x}px, ${sample.y}px) rotate(${angle}rad)` : 'translate(0, 0)'
+          })
+          if (progress < 1) frame = requestAnimationFrame(update)
+          else { history.length = 0; if (dot) dot.style.opacity = '0'; trails.forEach((trail) => { trail.style.opacity = '0' }); if (!cancelled) launch(element, 1800 + Math.random() * 3600) }
         }
-        element.style.left = `${motion.x}%`
-        element.style.top = `${motion.y}%`
-        element.style.setProperty('--particle-trail-angle', `${Math.atan2(motion.dy, motion.dx) * 180 / Math.PI}deg`)
-        element.style.setProperty('--particle-trail-length', `${motion.trail}px`)
-        const animation = element.animate([
-          { opacity: 0, transform: 'translate(0, 0)' },
-          { opacity: .72, transform: 'translate(8px, 5px)', offset: .2 },
-          { opacity: .64, transform: `translate(${motion.dx * .72}px, ${motion.dy * .72}px)`, offset: .72 },
-          { opacity: 0, transform: `translate(${motion.dx}px, ${motion.dy}px)` },
-        ], { duration: motion.duration, easing: 'ease-in-out', fill: 'both' })
-        animations.add(animation)
-        animation.finished.then(() => {
-          animations.delete(animation)
-          if (!cancelled) launch(element, 1800 + Math.random() * 3600)
-        }).catch(() => animations.delete(animation))
+        frame = requestAnimationFrame(update)
       }, delay)
       timers.add(timer)
     }
     elements.forEach((element, index) => launch(element, index * 1700))
-    return () => {
-      cancelled = true
-      timers.forEach((timer) => window.clearTimeout(timer))
-      animations.forEach((animation) => animation.cancel())
-    }
+    return () => { cancelled = true; cancelAnimationFrame(frame); timers.forEach(window.clearTimeout) }
   }, [])
 
   return <div className="shooting-stars" aria-hidden="true">
-    {['particle-one', 'particle-two', 'particle-three', 'particle-four'].map((className, index) => <span key={className} ref={(element) => { particles.current[index] = element }} className={`shooting-particle ${className}`}><span className="particle-trail" /><span className="particle-dot" /></span>)}
+    {['particle-one', 'particle-two', 'particle-three', 'particle-four'].map((className, index) => <span key={className} ref={(element) => { particles.current[index] = element }} className={`shooting-particle ${className}`}><span className="particle-trail" /><span className="particle-trail" /><span className="particle-trail" /><span className="particle-dot" /></span>)}
   </div>
 }
 
