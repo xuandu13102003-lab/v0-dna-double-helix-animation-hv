@@ -49,13 +49,17 @@ function frostingPath(rim: Rim, count: number, seed: number) {
   }
   const smoothMax = (a: number, b: number) => { const k = 0.18; const max = Math.max(a, b); return max + Math.log(Math.exp(k * (a - max)) + Math.exp(k * (b - max))) / k }
   const left = rim.cx - rim.rx; const right = rim.cx + rim.rx; const samples = Math.ceil(right - left); let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)}`
-  for (let index = 1; index <= samples; index += 1) {
-    const x = left + index; const progress = index / samples; let depth = base + 3 * Math.sin(progress * Math.PI * 3)
+  const edgeDepth = (x: number, progress: number) => {
+    let depth = base + 2.5 * Math.sin(progress * Math.PI * 3) + 1.2 * Math.sin(progress * Math.PI * 7)
     bumps.forEach((bump) => {
       const normalized = (x - bump.x) / bump.halfWidth
       if (Math.abs(normalized) < 1) { const dripDepth = bump.height * Math.sqrt(Math.max(0, 1 - normalized * normalized)); depth = smoothMax(depth, dripDepth) }
     })
-    path += ` L${x.toFixed(1)} ${(rimY(x) + depth).toFixed(1)}`
+    return depth
+  }
+  for (let index = 1; index <= samples; index += 1) {
+    const x = left + index; const progress = index / samples; const y = rimY(x) + edgeDepth(x, progress); const previousX = x - 1; const previousY = rimY(previousX) + edgeDepth(previousX, (index - 1) / samples)
+    path += ` Q${previousX.toFixed(1)} ${previousY.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`
   }
   const rimPassSamples = Math.ceil((right - left) / 1.5)
   for (let index = 1; index <= rimPassSamples; index += 1) {
