@@ -278,7 +278,7 @@ export default function Page() {
     }
     balloonRaf.current = requestAnimationFrame(animateBalloons)
     return () => { if (balloonRaf.current) cancelAnimationFrame(balloonRaf.current) }
-  }, [balloonDrawn])
+  }, [balloonDrawn, balloonBusy])
   const line = (group: string, d: string, className = '', children?: ReactNode, ref = register) => <path ref={ref} data-stroke data-group={group} className={className} d={d}>{children}</path>
   return <main className="gift-page">
     <Fireworks active={states[6] === 'complete'} />
