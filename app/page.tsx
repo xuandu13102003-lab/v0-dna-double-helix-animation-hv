@@ -234,7 +234,9 @@ export default function Page() {
         if (!path) { balloonStartedAt.current[index] = now; balloonSwayBlendAt.current[index] = now; activeBalloonDrawings.current = Math.max(0, activeBalloonDrawings.current - 1); if (activeBalloonDrawings.current === 0) { setPen(null); setPenVisible(false) }; setBalloonDrawn((drawn) => drawn.map((value, i) => i === index ? true : value)); setBalloonBusy((busy) => busy.map((value, i) => i === index ? false : value)); return }
         const length = getGeometryLength(path) ?? 1; const progress = Math.min(1, Math.max(0, (now - started) / Math.max(260, length * 3.2)))
         path.style.opacity = '1'; path.style.strokeDashoffset = `${length * (1 - progress)}`
-        const point = path.getPointAtLength(length * progress); setPen({ x: point.x, y: point.y })
+        const point = path.getPointAtLength(length * progress)
+        const svg = drawingRef.current; const elementMatrix = path.getScreenCTM(); const svgMatrix = svg?.getScreenCTM()
+        if (svg && elementMatrix && svgMatrix) { const screenPoint = new DOMPoint(point.x, point.y).matrixTransform(elementMatrix); const svgPoint = screenPoint.matrixTransform(svgMatrix.inverse()); setPen({ x: svgPoint.x, y: svgPoint.y }) } else { setPen({ x: point.x, y: point.y }) }
         if (progress >= 1) { path.style.strokeDashoffset = '0'; pathIndex += 1; started = now + 18 }
         requestAnimationFrame(drawBalloon)
       }
