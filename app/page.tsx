@@ -123,10 +123,11 @@ export default function Page() {
   const [balloonDrawn, setBalloonDrawn] = useState<boolean[]>([false, false, false, false])
   const [balloonBusy, setBalloonBusy] = useState<boolean[]>([false, false, false, false])
   const [balloonFloating, setBalloonFloating] = useState<boolean[]>([false, false, false, false])
-  const [open, setOpen] = useState(false); const [drawing, setDrawing] = useState(true); const [pen, setPen] = useState<{ x: number; y: number } | null>(null)
+  const [open, setOpen] = useState(false); const [drawing, setDrawing] = useState(true); const [pen, setPen] = useState<{ x: number; y: number } | null>(null); const [penVisible, setPenVisible] = useState(true)
   const drawingRef = useRef<SVGSVGElement | null>(null)
   const geometries = useRef<Geometry[]>([]); const raf = useRef<number | undefined>(undefined); const balloonRaf = useRef<number | undefined>(undefined); const runId = useRef(0)
   const balloonGroups = useRef<(SVGGElement | null)[]>([])
+  const activeBalloonDrawings = useRef(0)
   const balloonGeometries = useRef<Geometry[][]>([[], [], [], []])
   const balloonStrings = useRef<(Geometry | null)[]>([])
   const balloonStartedAt = useRef<number[]>([0, 0, 0, 0])
@@ -135,7 +136,7 @@ export default function Page() {
   const registerBalloonGroup = (element: SVGGElement | null, index: number) => { balloonGroups.current[index] = element; if (element) balloonGeometries.current[index] = Array.from(element.querySelectorAll<Geometry>('[data-stroke]')) }
   const registerBalloonString = (element: Geometry | null, index: number) => { balloonStrings.current[index] = element; register(element) }
   const replay = useCallback(() => {
-    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setDrawing(true); setStates(groups.map(() => 'pending')); setBalloonDrawn([false, false, false, false]); setBalloonBusy([false, false, false, false]); setBalloonFloating([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]; balloonSwayBlendAt.current = [0, 0, 0, 0]
+    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setPenVisible(true); setDrawing(true); setStates(groups.map(() => 'pending')); setBalloonDrawn([false, false, false, false]); setBalloonBusy([false, false, false, false]); setBalloonFloating([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]; balloonSwayBlendAt.current = [0, 0, 0, 0]
     const groupOrder = new Map(groups.map((group, index) => [group, index]))
     const ordered = geometries.current
       .filter((element) => getGeometryLength(element) !== null)
@@ -156,7 +157,7 @@ export default function Page() {
     const draw = (now: number) => {
       if (id !== runId.current) return
       const element = ordered[index]
-      if (!element) { setDrawing(false); setPen(null); return }
+      if (!element) { setDrawing(false); setPen(null); setPenVisible(false); return }
       if (element.dataset.group !== currentGroup) {
         currentGroup = element.dataset.group || ''
         const groupIndex = groups.indexOf(currentGroup as typeof groups[number])
@@ -230,14 +231,14 @@ export default function Page() {
       let pathIndex = 0; let started = 0
       const drawBalloon = (now: number) => {
         const path = paths[pathIndex]
-        if (!path) { balloonStartedAt.current[index] = now; balloonSwayBlendAt.current[index] = now; setBalloonDrawn((drawn) => drawn.map((value, i) => i === index ? true : value)); setBalloonBusy((busy) => busy.map((value, i) => i === index ? false : value)); return }
+        if (!path) { balloonStartedAt.current[index] = now; balloonSwayBlendAt.current[index] = now; activeBalloonDrawings.current = Math.max(0, activeBalloonDrawings.current - 1); if (activeBalloonDrawings.current === 0) { setPen(null); setPenVisible(false) }; setBalloonDrawn((drawn) => drawn.map((value, i) => i === index ? true : value)); setBalloonBusy((busy) => busy.map((value, i) => i === index ? false : value)); return }
         const length = getGeometryLength(path) ?? 1; const progress = Math.min(1, Math.max(0, (now - started) / Math.max(260, length * 3.2)))
         path.style.opacity = '1'; path.style.strokeDashoffset = `${length * (1 - progress)}`
         const point = path.getPointAtLength(length * progress); setPen({ x: point.x, y: point.y })
         if (progress >= 1) { path.style.strokeDashoffset = '0'; pathIndex += 1; started = now + 18 }
         requestAnimationFrame(drawBalloon)
       }
-      requestAnimationFrame((now) => { started = now; drawBalloon(now) })
+      activeBalloonDrawings.current += 1; setPenVisible(true); requestAnimationFrame((now) => { started = now; drawBalloon(now) })
     }
     requestAnimationFrame(animateFlight)
   }, [balloonBusy, balloonDrawn])
@@ -297,7 +298,7 @@ export default function Page() {
         <g className={`balloon balloon-four ${balloonBusy[3] ? 'balloon-busy' : ''} ${balloonFloating[3] ? 'balloon-floating' : ''}`} ref={(element) => registerBalloonGroup(element, 3)} onClick={() => clickBalloon(3)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); clickBalloon(3) } }} role="button" tabIndex={balloonDrawn[3] && !balloonBusy[3] ? 0 : -1} aria-label="Redraw balloon four">{line('bubbles', 'M598 375c-10-2-17-10-16-21 1-12 10-20 22-20 12 0 21 8 22 20 1 11-6 19-17 21-12 2-12 2-12 0Z', 'balloon-body')}{line('bubbles', 'M598 375l-4 7 4 6 4-6-4-7Z', 'balloon-knot')}{line('bubbles', 'M598 388 C 602 402, 594 418, 598 438', 'balloon-string', undefined, (element) => registerBalloonString(element, 3))}<ellipse className="balloon-hit" cx="598" cy="354" rx="26" ry="42" /><path className="balloon-string-hit" d="M598 382 C 602 402, 594 418, 598 446" /></g>
         {line('fireworks', 'M105 180l3 9 9 3-9 3-3 9-3-9-9-3 9-3Z')}
         <g className={`envelope ${completed ? 'envelope-ready' : ''}`} onClick={() => completed && setOpen(true)} onKeyDown={(event) => { if (completed && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); setOpen(true) } }} role="button" tabIndex={completed ? 0 : -1} aria-disabled={!completed} aria-label="Mở lá thư">{line('envelope', 'M245 535h210v42H245z')}{line('envelope', 'm245 535 105 29 105-29', 'envelope-flap')}{line('envelope', 'M245 577l77-31M455 577l-77-31')}{<circle cx="350" cy="558" r="7" />}<rect className="envelope-hit" x="238" y="528" width="224" height="58" rx="4" /></g>
-        {pen && <circle className="pen-tip" cx={pen.x} cy={pen.y} r="3" />}
+        {penVisible && pen && <circle className="pen-tip" cx={pen.x} cy={pen.y} r="3" />}
       </svg>
           {open && <div className="letter" role="dialog" aria-label="Lá thư chúc mừng"><button className="close" onClick={() => setOpen(false)} aria-label="Đóng thư">×</button><p className="letter-kicker">gửi Bảo Ngọc,</p><svg className="handwriting" viewBox="0 0 360 260" role="img" aria-label={message}><text x="180" y="25" textAnchor="middle"><tspan x="180" dy="0">Chúc người bạn thiên tài super cute</tspan><tspan x="180" dy="31">siêu cấp tốt bụng tuổi mới luôn đầy</tspan><tspan x="180" dy="31">năng lượng nhaa, giữ vững phong độ</tspan><tspan x="180" dy="31">và ngủ cười khà khà thật nhiềuuu.</tspan><tspan x="180" dy="31">Hơn hết là nhớ ăn uống thật đầy đủ</tspan><tspan x="180" dy="31">nhaaaaaaaa 💖💖</tspan></text></svg><p className="signature">— người bạn cùng học</p></div>}
     </section>
