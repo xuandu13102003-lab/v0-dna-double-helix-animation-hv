@@ -102,7 +102,7 @@ function Fireworks({ active }: { active: boolean }) {
       const flight = 700 + Math.random() * 650; const dx = targetX - start.x; const dy = targetY - start.y
       rockets.push({ x: start.x, y: start.y, vx: dx / flight * 16.67, vy: dy / flight * 16.67, targetX, targetY, color: colors[Math.floor(Math.random() * colors.length)], trail: [] })
     }
-    const burst = (rocket: Rocket) => { const count = 38 + Math.floor(Math.random() * 28); for (let i = 0; i < count; i += 1) { const angle = Math.random() * Math.PI * 2; const speed = .8 + Math.random() * 3.2; sparks.push({ x: rocket.x, y: rocket.y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - Math.random() * .5, gravity: .018 + Math.random() * .03, drag: .985 + Math.random() * .01, life: 520 + Math.random() * 680, age: 0, size: .4 + Math.random() * 1.02, alpha: .45 + Math.random() * .5, color: colors[Math.floor(Math.random() * colors.length)], trail: [] }) } }
+    const burst = (rocket: Rocket) => { const count = 38 + Math.floor(Math.random() * 28); for (let i = 0; i < count; i += 1) { const angle = Math.random() * Math.PI * 2; const speed = (.8 + Math.random() * 3.2) * .82; sparks.push({ x: rocket.x, y: rocket.y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - Math.random() * .5, gravity: .018 + Math.random() * .03, drag: .985 + Math.random() * .01, life: 520 + Math.random() * 680, age: 0, size: .4 + Math.random() * 1.02, alpha: .45 + Math.random() * .5, color: colors[Math.floor(Math.random() * colors.length)], trail: [] }) } }
     const drawTrail = (trail: TrailPoint[], color: string, alpha: number, width: number) => { if (trail.length < 2) return; ctx.lineCap = 'round'; ctx.shadowBlur = 2.5; ctx.shadowColor = color; for (let i = 1; i < trail.length; i += 1) { const p = trail[i - 1]; const q = trail[i]; ctx.strokeStyle = `${color}${Math.round(alpha * (i / trail.length) * 255).toString(16).padStart(2, '0')}`; ctx.lineWidth = width * (.55 + .45 * (i / trail.length)); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke() } }
     const draw = (time: number) => {
       const dt = Math.min(2.2, Math.max(.5, (time - last) / 16.67)); last = time
@@ -226,7 +226,7 @@ export default function Page() {
   const line = (group: string, d: string, className = '', children?: ReactNode, ref = register) => <path ref={ref} data-stroke data-group={group} className={className} d={d}>{children}</path>
   return <main className="gift-page">
     <Fireworks active={states[6] === 'complete'} />
-    <header className="intro"><p className="eyebrow">A little line of magic</p><h1>For Bảo Ngọc</h1><p className="subtitle">Một chiếc bánh được vẽ riêng cho người bạn đồng hành TOEIC.</p></header>
+    <header className="intro"><p className="eyebrow">A little line of magic</p><h1>For Bảo Ngọc</h1><p className="subtitle">M���t chiếc bánh được vẽ riêng cho người bạn đồng hành TOEIC.</p></header>
     <section className="scene" aria-label="Bức tranh bánh sinh nhật đang đ��ợc vẽ">
       <ShootingStars />
       <svg className="drawing" viewBox="0 0 700 600" role="img" aria-label="Một chiếc bánh sinh nhật được vẽ bằng nét mực"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
