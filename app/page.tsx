@@ -28,6 +28,14 @@ function getGeometryLength(element: Geometry) {
 
 const groups = ['plate', 'layers', 'cream', 'candles', 'berries', 'bubbles', 'fireworks', 'envelope'] as const
 const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng nhaa, giữ vững phong độ và ngủ cười khà khà thật nhiềuuu. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa 💖💖'
+const titlePaths = [
+  'M8 42V10h12c10 0 10 16 0 16H8m12 0 14 16', 'M38 10v32m0-16h16m0-16v32',
+  'M74 18c-16-10-20 22-5 24 12 2 16-12 4-18m-7-14 5-5', 'M104 10v32m0-24c14-10 22 2 14 10l-14 6m14-6 12 14',
+  'M156 10v32m0-30 18 30m0-32v32', 'M190 42V10h13c12 0 14 18 1 18h-14m14 0 14 14',
+  'M236 42V10h13c12 0 14 18 1 18h-14m5-25 3-3', 'M278 18c-16-10-20 22-5 24 12 2 16-12 4-18m-5-8 4-5',
+  'M308 10v32m0-22c15-9 22 4 14 12l-14 8m14-8 12 10', 'M348 18c-14-9-23 14-9 22 10 6 22-2 18-14-4-12-15-11-19-4',
+  'M378 10v32m0-24 16 24m0-32v32', 'M414 10v32m0-30 18 30m0-32v32'
+]
 
 function ShootingStars() {
   const particles = useRef<(HTMLSpanElement | null)[]>([])
@@ -123,7 +131,9 @@ export default function Page() {
   const [balloonDrawn, setBalloonDrawn] = useState<boolean[]>([false, false, false, false])
   const [balloonBusy, setBalloonBusy] = useState<boolean[]>([false, false, false, false])
   const [balloonFloating, setBalloonFloating] = useState<boolean[]>([false, false, false, false])
-  const [open, setOpen] = useState(false); const [drawing, setDrawing] = useState(true); const [pen, setPen] = useState<{ x: number; y: number } | null>(null)
+  const [open, setOpen] = useState(false); const [drawing, setDrawing] = useState(true); const [titleRun, setTitleRun] = useState(0)
+  const titleRef = useRef<SVGSVGElement | null>(null); const titleRaf = useRef<number | undefined>(undefined)
+  const [pen, setPen] = useState<{ x: number; y: number } | null>(null)
   const drawingRef = useRef<SVGSVGElement | null>(null)
   const geometries = useRef<Geometry[]>([]); const raf = useRef<number | undefined>(undefined); const balloonRaf = useRef<number | undefined>(undefined); const runId = useRef(0)
   const balloonGroups = useRef<(SVGGElement | null)[]>([])
@@ -135,7 +145,7 @@ export default function Page() {
   const registerBalloonGroup = (element: SVGGElement | null, index: number) => { balloonGroups.current[index] = element; if (element) balloonGeometries.current[index] = Array.from(element.querySelectorAll<Geometry>('[data-stroke]')) }
   const registerBalloonString = (element: Geometry | null, index: number) => { balloonStrings.current[index] = element; register(element) }
   const replay = useCallback(() => {
-    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setDrawing(true); setStates(groups.map(() => 'pending')); setBalloonDrawn([false, false, false, false]); setBalloonBusy([false, false, false, false]); setBalloonFloating([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]; balloonSwayBlendAt.current = [0, 0, 0, 0]
+    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setTitleRun((run) => run + 1); setOpen(false); setPen(null); setDrawing(true); setStates(groups.map(() => 'pending')); setBalloonDrawn([false, false, false, false]); setBalloonBusy([false, false, false, false]); setBalloonFloating([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]; balloonSwayBlendAt.current = [0, 0, 0, 0]
     const groupOrder = new Map(groups.map((group, index) => [group, index]))
     const ordered = geometries.current
       .filter((element) => getGeometryLength(element) !== null)
@@ -200,8 +210,28 @@ export default function Page() {
     raf.current = requestAnimationFrame(draw)
   }, [])
   useEffect(() => {
-    let frame = 0
+    const paths = [...(titleRef.current?.querySelectorAll<SVGPathElement>('[data-title-stroke]') ?? [])]
+    if (!paths.length) return
+    if (titleRaf.current) cancelAnimationFrame(titleRaf.current)
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
+    paths.forEach((path) => { const length = getGeometryLength(path) ?? 1; path.style.strokeDasharray = `${length}`; path.style.strokeDashoffset = reduced ? '0' : `${length}`; path.style.opacity = reduced ? '1' : '0'; path.style.fillOpacity = reduced ? '1' : '0' })
+    if (reduced) return
+    let index = 0; let started = performance.now()
+    const drawTitle = (now: number) => {
+      const path = paths[index]
+      if (!path) return
+      const length = getGeometryLength(path) ?? 1; const progress = Math.min(1, Math.max(0, (now - started) / Math.max(90, length * 2.2)))
+      path.style.opacity = '1'; path.style.strokeDashoffset = `${length * (1 - progress)}`
+      if (progress >= 1) { path.style.strokeDashoffset = '0'; path.style.fillOpacity = '1'; index += 1; started = now + 35 }
+      titleRaf.current = requestAnimationFrame(drawTitle)
+    }
+    titleRaf.current = requestAnimationFrame(drawTitle)
+    return () => { if (titleRaf.current) cancelAnimationFrame(titleRaf.current) }
+  }, [titleRun])
+
+  useEffect(() => {
     let cancelled = false
+    let frame = 0
     const start = () => { if (!cancelled) frame = requestAnimationFrame(replay) }
     if ('fonts' in document) document.fonts.ready.then(start)
     else start()
@@ -279,7 +309,7 @@ export default function Page() {
   const line = (group: string, d: string, className = '', children?: ReactNode, ref = register) => <path ref={ref} data-stroke data-group={group} className={className} d={d}>{children}</path>
   return <main className="gift-page">
     <Fireworks active={states[6] === 'complete'} />
-    <header className="intro"><p className="eyebrow">A little line of magic</p><h1>For Bảo Ngọc</h1></header>
+    <header className="intro"><p className="eyebrow">A little line of magic</p><h1>For Bảo Ngọc</h1><svg ref={titleRef} className="title-drawing" viewBox="0 0 450 52" role="img" aria-label="For Bảo Ngọc">{titlePaths.map((d, index) => <path key={index} data-title-stroke d={d} className="title-path" />)}</svg></header>
     <section className="scene" aria-label="Bức tranh bánh sinh nhật đang đ��ợc vẽ">
       <ShootingStars />
       <svg ref={drawingRef} className="drawing" viewBox="0 0 700 600" role="img" aria-label="Bức tranh bánh sinh nhật"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
