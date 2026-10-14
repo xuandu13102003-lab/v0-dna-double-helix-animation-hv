@@ -57,9 +57,11 @@ function frostingPath(rim: Rim, count: number, seed: number) {
     })
     return depth
   }
+  const edgePoints = Array.from({ length: samples + 1 }, (_, index) => { const x = left + index; return { x, y: rimY(x) + edgeDepth(x, index / samples) } })
   for (let index = 1; index <= samples; index += 1) {
-    const x = left + index; const progress = index / samples; const y = rimY(x) + edgeDepth(x, progress); const previousX = x - 1; const previousY = rimY(previousX) + edgeDepth(previousX, (index - 1) / samples)
-    path += ` Q${previousX.toFixed(1)} ${previousY.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`
+    const previous = edgePoints[index - 1]; const current = edgePoints[index]; const before = edgePoints[Math.max(0, index - 2)]; const after = edgePoints[Math.min(samples, index + 1)]
+    const controlOne = { x: previous.x + (current.x - before.x) / 6, y: previous.y + (current.y - before.y) / 6 }; const controlTwo = { x: current.x - (after.x - previous.x) / 6, y: current.y - (after.y - previous.y) / 6 }
+    path += ` C${controlOne.x.toFixed(1)} ${controlOne.y.toFixed(1)} ${controlTwo.x.toFixed(1)} ${controlTwo.y.toFixed(1)} ${current.x.toFixed(1)} ${current.y.toFixed(1)}`
   }
   const rimPassSamples = Math.ceil((right - left) / 1.5)
   for (let index = 1; index <= rimPassSamples; index += 1) {
