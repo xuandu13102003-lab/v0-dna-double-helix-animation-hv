@@ -27,6 +27,25 @@ function getGeometryLength(element: Geometry) {
 }
 
 const groups = ['plate', 'layers', 'cream', 'candles', 'berries', 'bubbles', 'fireworks', 'envelope'] as const
+
+type Rim = { cx: number; cy: number; rx: number; ry: number }
+const upperRim: Rim = { cx: 350, cy: 277, rx: 113, ry: 24 }
+const middleRim: Rim = { cx: 350, cy: 345, rx: 145, ry: 26 }
+const rimArc = ({ cx, cy, rx, ry }: Rim) => `M${cx - rx} ${cy} A${rx} ${ry} 0 0 0 ${cx + rx} ${cy}`
+function frostingPath(rim: Rim, dripFractions: number[]) {
+  const samples = 48
+  const points = Array.from({ length: samples + 1 }, (_, index) => { const t = Math.PI - (Math.PI * index) / samples; return { x: rim.cx + rim.rx * Math.cos(t), y: rim.cy + rim.ry * Math.sin(t) } })
+  const drips = dripFractions.map((fraction, index) => ({ index: Math.round(fraction * samples), length: [14, 27, 20, 31, 17][index % 5], width: 14 + (index % 3) * 2 })).sort((a, b) => a.index - b.index)
+  let path = `M${points[0].x} ${points[0].y}`
+  drips.forEach((drip) => {
+    const point = points[drip.index]; const left = points[Math.max(0, drip.index - 2)]; const right = points[Math.min(samples, drip.index + 2)]
+    path += ` C${left.x} ${left.y} ${point.x - drip.width / 2} ${point.y} ${point.x - drip.width / 2} ${point.y + drip.length - 4} C${point.x - drip.width / 2} ${point.y + drip.length + 5} ${point.x + drip.width / 2} ${point.y + drip.length + 5} ${point.x + drip.width / 2} ${point.y + drip.length - 4} C${point.x + drip.width / 2} ${point.y} ${right.x} ${right.y} ${right.x} ${right.y}`
+  })
+  points.slice(1).forEach((point) => { if (!drips.some((drip) => drip.index === points.indexOf(point))) path += ` L${point.x} ${point.y}` })
+  return path
+}
+const upperFrosting = frostingPath(upperRim, [.16, .42, .68, .88])
+const middleFrosting = frostingPath(middleRim, [.12, .3, .48, .66, .84])
 const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng nhaa, giữ vững phong độ và ngủ cười khà khà thật nhiềuuu. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa 💖💖'
 
 function ShootingStars() {
@@ -310,8 +329,8 @@ if (!balloonDrawn[index] || balloonPhase.current[index] !== 'idle') return
       <ShootingStars />
       <svg ref={drawingRef} className="drawing" viewBox="0 0 700 600" role="img" aria-label="Bức tranh bánh sinh nhật"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
         {line('plate', 'M130 505c12 25 429 25 440 0')}{line('plate', 'M130 505c40-30 400-30 440 0')}
-        {line('layers', 'M178 420v62c38 26 306 26 344 0v-62')}{line('layers', 'M178 420c24 29 320 29 344 0')}{line('layers', 'M205 345v75c35 24 255 24 290 0v-75')}{line('layers', 'M205 345c22 26 268 26 290 0')}{line('layers', 'M237 277v68c29 21 197 21 226 0v-68')}{line('layers', 'M237 277c22 24 204 24 226 0')}
-        {line('cream', 'M237 277 C255 288 273 292 289 286 C294 284 299 281 304 278 C306 289 306 306 315 311 C323 316 331 309 331 298 C331 289 330 283 332 279 C347 290 363 292 378 286 C383 284 388 281 393 278 C395 291 395 312 405 317 C414 322 422 314 422 303 C422 292 421 284 423 279 C436 288 450 290 463 277', 'cream-line')}{line('cream', 'M205 345 C222 356 241 361 257 356 C263 354 268 351 273 347 C275 361 275 380 285 386 C294 392 303 384 303 373 C303 361 302 354 304 349 C320 359 337 363 353 357 C359 355 364 351 369 348 C371 363 371 390 382 396 C392 402 401 394 401 381 C401 367 400 356 402 351 C418 361 435 365 451 359 C457 357 462 353 467 350 C469 363 469 385 479 391 C488 397 497 389 497 377 C497 365 496 356 498 351 C497 355 500 351 495 345', 'cream-line')}
+        {line('layers', 'M178 420v62c38 26 306 26 344 0v-62')}{line('layers', 'M178 420c24 29 320 29 344 0')}{line('layers', 'M205 345v75c35 24 255 24 290 0v-75')}{line('layers', rimArc(middleRim))}{line('layers', 'M237 277v68c29 21 197 21 226 0v-68')}{line('layers', rimArc(upperRim))}
+        {line('cream', upperFrosting, 'cream-line')}{line('cream', middleFrosting, 'cream-line')}
         {line('berries', 'M275 270c-10-19 5-32 17-15 8-20 27-9 19 11')}{line('berries', 'M394 270c-10-19 5-32 17-15 8-20 27-9 19 11')}{line('berries', 'M298 236c-8-23 15-31 20-11 8-22 29-8 18 12')}
         {line('candles', 'M276 277V225M289 277V225M276 225h13M274 267c5 5 10 5 16 0', 'candle-blue')}{line('candles', 'M282.5 225v-9', 'wick')}
         {line('candles', 'M282.5 216c-7-10-1-19 5-27 3 9 11 14 7 23-2 5-7 8-12 4Z', 'flame flame-one', <animate attributeName="d" dur="1.35s" repeatCount="indefinite" values="M282.5 216c-7-10-1-19 5-27 3 9 11 14 7 23-2 5-7 8-12 4Z;M282.5 216c-2-13 6-18 10-28 7 10 6 18 1 25-3 5-7 6-11 3Z;M282.5 216c-8-8-5-18 3-27 1 10 10 13 8 22-1 5-6 8-11 5Z;M282.5 216c-7-10-1-19 5-27 3 9 11 14 7 23-2 5-7 8-12 4Z" />)}
