@@ -47,30 +47,20 @@ function frostingPath(rim: Rim, count: number, seed: number) {
     const height = halfWidth * (.95 + random() * 1.15)
     bumps.push({ x: center.x, halfWidth, height })
   }
-  const smoothMax = (a: number, b: number) => { const softness = 6; const delta = a - b; return (a + b + Math.sqrt(delta * delta + softness * softness) - softness) / 2 }
+  const smoothMax = (a: number, b: number) => { const k = 0.18; const max = Math.max(a, b); return max + Math.log(Math.exp(k * (a - max)) + Math.exp(k * (b - max))) / k }
   const left = rim.cx - rim.rx; const right = rim.cx + rim.rx; const samples = Math.ceil(right - left); let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)}`
-  const edgeDepth = (x: number, progress: number) => {
-    const wave = 3.2 * Math.sin(progress * Math.PI * 12) + 0.7 * Math.sin(progress * Math.PI * 24)
-    let depth = base + wave
+  for (let index = 1; index <= samples; index += 1) {
+    const x = left + index; let depth = base
     bumps.forEach((bump) => {
       const normalized = (x - bump.x) / bump.halfWidth
-      if (Math.abs(normalized) < 1) { const profile = Math.sqrt(Math.max(0, 1 - normalized * normalized)); const easedProfile = profile * profile * (3 - 2 * profile); const dripDepth = bump.height * easedProfile; depth = smoothMax(depth, dripDepth) }
+      if (Math.abs(normalized) < 1) { const dripDepth = bump.height * Math.sqrt(Math.max(0, 1 - normalized * normalized)); depth = smoothMax(depth, dripDepth) }
     })
-    return depth
-  }
-  const edgePoints = Array.from({ length: samples + 1 }, (_, index) => { const x = left + index; return { x, y: rimY(x) + edgeDepth(x, index / samples) } })
-  for (let index = 1; index <= samples; index += 1) {
-    const previous = edgePoints[index - 1]; const current = edgePoints[index]; const before = edgePoints[Math.max(0, index - 2)]; const after = edgePoints[Math.min(samples, index + 1)]
-    const controlOne = { x: previous.x + (current.x - before.x) / 6, y: previous.y + (current.y - before.y) / 6 }; const controlTwo = { x: current.x - (after.x - previous.x) / 6, y: current.y - (after.y - previous.y) / 6 }
-    path += ` C${controlOne.x.toFixed(1)} ${controlOne.y.toFixed(1)} ${controlTwo.x.toFixed(1)} ${controlTwo.y.toFixed(1)} ${current.x.toFixed(1)} ${current.y.toFixed(1)}`
+    path += ` L${x.toFixed(1)} ${(rimY(x) + depth).toFixed(1)}`
   }
   const rimPassSamples = Math.ceil((right - left) / 1.5)
-  const rimWaveY = (x: number) => rimY(x)
-  let previousRim = { x: right, y: rimWaveY(right) }
   for (let index = 1; index <= rimPassSamples; index += 1) {
-    const x = right - (right - left) * (index / rimPassSamples); const currentRim = { x, y: rimWaveY(x) }; const beforeRim = { x: Math.min(right, x + 2), y: rimWaveY(Math.min(right, x + 2)) }; const afterRim = { x: Math.max(left, x - 2), y: rimWaveY(Math.max(left, x - 2)) }
-    const controlOne = { x: previousRim.x + (currentRim.x - beforeRim.x) / 6, y: previousRim.y + (currentRim.y - beforeRim.y) / 6 }; const controlTwo = { x: currentRim.x - (afterRim.x - previousRim.x) / 6, y: currentRim.y - (afterRim.y - previousRim.y) / 6 }
-    path += ` C${controlOne.x.toFixed(1)} ${controlOne.y.toFixed(1)} ${controlTwo.x.toFixed(1)} ${controlTwo.y.toFixed(1)} ${currentRim.x.toFixed(1)} ${currentRim.y.toFixed(1)}`; previousRim = currentRim
+    const x = right - (right - left) * (index / rimPassSamples)
+    path += ` L${x.toFixed(1)} ${rimY(x).toFixed(1)}`
   }
   return path
 }
