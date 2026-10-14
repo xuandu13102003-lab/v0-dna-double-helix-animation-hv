@@ -36,7 +36,7 @@ function ShootingStars() {
     const elements = particles.current.filter((element): element is HTMLSpanElement => Boolean(element))
     if (!elements.length) return
     let cancelled = false
-    let frame = 0
+    const frames = new Set<number>()
     const timers = new Set<number>()
     const launch = (element: HTMLSpanElement, delay: number) => {
       const timer = window.setTimeout(() => {
@@ -68,15 +68,15 @@ function ShootingStars() {
             trail.style.opacity = `${alpha}`
             trail.style.transform = sample ? `translate(${sample.x}px, ${sample.y}px) rotate(${angle}rad)` : 'translate(0, 0)'
           })
-          if (progress < 1) frame = requestAnimationFrame(update)
+          if (progress < 1) { const nextFrame = requestAnimationFrame(update); frames.add(nextFrame) }
           else { history.length = 0; if (dot) dot.style.opacity = '0'; trails.forEach((trail) => { trail.style.opacity = '0' }); if (!cancelled) launch(element, 1800 + Math.random() * 3600) }
         }
-        frame = requestAnimationFrame(update)
+        const nextFrame = requestAnimationFrame(update); frames.add(nextFrame)
       }, delay)
       timers.add(timer)
     }
     elements.forEach((element, index) => launch(element, index * 1700))
-    return () => { cancelled = true; cancelAnimationFrame(frame); timers.forEach(window.clearTimeout) }
+    return () => { cancelled = true; frames.forEach(cancelAnimationFrame); timers.forEach(window.clearTimeout) }
   }, [])
 
   return <div className="shooting-stars" aria-hidden="true">
@@ -108,8 +108,8 @@ function Fireworks({ active }: { active: boolean }) {
       const dt = Math.min(2.2, Math.max(.5, (time - last) / 16.67)); last = time
       if (time >= nextLaunch && rockets.length < 3) { launch(); nextLaunch = time + 650 + Math.random() * 1500 }
       ctx.clearRect(0, 0, innerWidth, innerHeight)
-      for (let i = rockets.length - 1; i >= 0; i -= 1) { const rocket = rockets[i]; rocket.trail.push({ x: rocket.x, y: rocket.y }); if (rocket.trail.length > 13) rocket.trail.shift(); rocket.x += rocket.vx * dt; rocket.y += rocket.vy * dt; const distance = Math.hypot(rocket.targetX - rocket.x, rocket.targetY - rocket.y); drawTrail(rocket.trail, '#f4e9d8', .41, 1.2); ctx.shadowBlur = 7; ctx.shadowColor = rocket.color; ctx.fillStyle = rocket.color; ctx.shadowBlur = 7; ctx.shadowColor = rocket.color; ctx.beginPath(); ctx.arc(rocket.x, rocket.y, 1.35, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; if (distance < 10) { burst(rocket); rockets.splice(i, 1) } }
-      for (let i = sparks.length - 1; i >= 0; i -= 1) { const spark = sparks[i]; spark.age += 16.67 * dt; spark.vx *= Math.pow(spark.drag, dt); spark.vy = spark.vy * Math.pow(spark.drag, dt) + spark.gravity * dt; spark.x += spark.vx * dt; spark.y += spark.vy * dt; spark.trail.push({ x: spark.x, y: spark.y }); if (spark.trail.length > 5) spark.trail.shift(); const fade = Math.max(0, 1 - spark.age / spark.life); drawTrail(spark.trail, spark.color, fade * spark.alpha * .84, Math.max(.5, spark.size * .78)); ctx.shadowBlur = 5; ctx.shadowColor = spark.color; ctx.fillStyle = `${spark.color}${Math.round(fade * spark.alpha * 255).toString(16).padStart(2, '0')}`; ctx.shadowBlur = 5; ctx.shadowColor = spark.color; ctx.beginPath(); ctx.arc(spark.x, spark.y, spark.size, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; if (spark.age >= spark.life) sparks.splice(i, 1) }
+      for (let i = rockets.length - 1; i >= 0; i -= 1) { const rocket = rockets[i]; rocket.trail.push({ x: rocket.x, y: rocket.y }); if (rocket.trail.length > 13) rocket.trail.shift(); rocket.x += rocket.vx * dt; rocket.y += rocket.vy * dt; const distance = Math.hypot(rocket.targetX - rocket.x, rocket.targetY - rocket.y); drawTrail(rocket.trail, '#f4e9d8', .41, 1.2); ctx.shadowBlur = 7; ctx.shadowColor = rocket.color; ctx.fillStyle = rocket.color; ctx.beginPath(); ctx.arc(rocket.x, rocket.y, 1.35, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; if (distance < 10) { burst(rocket); rockets.splice(i, 1) } }
+      for (let i = sparks.length - 1; i >= 0; i -= 1) { const spark = sparks[i]; spark.age += 16.67 * dt; spark.vx *= Math.pow(spark.drag, dt); spark.vy = spark.vy * Math.pow(spark.drag, dt) + spark.gravity * dt; spark.x += spark.vx * dt; spark.y += spark.vy * dt; spark.trail.push({ x: spark.x, y: spark.y }); if (spark.trail.length > 5) spark.trail.shift(); const fade = Math.max(0, 1 - spark.age / spark.life); drawTrail(spark.trail, spark.color, fade * spark.alpha * .84, Math.max(.5, spark.size * .78)); ctx.shadowBlur = 5; ctx.shadowColor = spark.color; ctx.fillStyle = `${spark.color}${Math.round(fade * spark.alpha * 255).toString(16).padStart(2, '0')}`; ctx.beginPath(); ctx.arc(spark.x, spark.y, spark.size, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; if (spark.age >= spark.life) sparks.splice(i, 1) }
       frame = requestAnimationFrame(draw)
     }
     resize(); addEventListener('resize', resize); addEventListener('click', launchAtPointer); frame = requestAnimationFrame(draw)
