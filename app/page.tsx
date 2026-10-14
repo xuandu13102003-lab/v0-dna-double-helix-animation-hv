@@ -30,42 +30,49 @@ const groups = ['plate', 'layers', 'cream', 'candles', 'berries', 'bubbles', 'fi
 const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng nhaa, giữ vững phong độ và ngủ cười khà khà thật nhiềuuu. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa 💖💖'
 
 function ShootingStars() {
-  const particles = useRef<(HTMLSpanElement | null)[]>([])
+  const stars = useRef<(HTMLSpanElement | null)[]>([])
 
   useEffect(() => {
-    const elements = particles.current.filter((element): element is HTMLSpanElement => Boolean(element))
+    const elements = stars.current.filter((element): element is HTMLSpanElement => Boolean(element))
     if (!elements.length) return
     let cancelled = false
     const animations = new Set<Animation>()
     const timers = new Set<number>()
-    const launch = (element: HTMLSpanElement, delay: number) => {
+    const launches = [
+      { delay: 0, dx: 220, dy: 130, duration: 2600 },
+      { delay: 3200, dx: -190, dy: 120, duration: 3000 },
+      { delay: 6900, dx: -170, dy: 100, duration: 2400 },
+      { delay: 9800, dx: 180, dy: 110, duration: 2800 },
+    ]
+
+    const randomMotion = () => ({
+      dx: (Math.random() > .5 ? 1 : -1) * (150 + Math.random() * 100),
+      dy: 80 + Math.random() * 80,
+      duration: 2100 + Math.random() * 1100,
+    })
+
+    const launch = (element: HTMLSpanElement, motion: { dx: number; dy: number; duration: number }, quiet = 0) => {
+      if (cancelled) return
       const timer = window.setTimeout(() => {
         timers.delete(timer)
         if (cancelled) return
-        const motion = {
-          x: 8 + Math.random() * 84,
-          y: 9 + Math.random() * 25,
-          dx: (Math.random() > .5 ? 1 : -1) * (30 + Math.random() * 50),
-          dy: 18 + Math.random() * 32,
-          duration: 1500 + Math.random() * 1300,
-        }
-        element.style.left = `${motion.x}%`
-        element.style.top = `${motion.y}%`
+        element.style.opacity = '1'
         const animation = element.animate([
-          { opacity: 0, transform: 'translate(0, 0) scale(.65)' },
-          { opacity: .72, transform: 'translate(8px, 5px) scale(1)', offset: .2 },
-          { opacity: .64, transform: `translate(${motion.dx * .72}px, ${motion.dy * .72}px) scale(.95)`, offset: .72 },
-          { opacity: 0, transform: `translate(${motion.dx}px, ${motion.dy}px) scale(.7)` },
-        ], { duration: motion.duration, easing: 'ease-in-out', fill: 'both' })
+          { opacity: 0, transform: 'translate3d(0, 0, 0) rotate(var(--star-angle)) scale(.55)' },
+          { opacity: .95, transform: `translate3d(${motion.dx * .18}px, ${motion.dy * .18}px, 0) rotate(var(--star-angle)) scale(1)`, offset: .18 },
+          { opacity: .82, transform: `translate3d(${motion.dx * .82}px, ${motion.dy * .82}px, 0) rotate(var(--star-angle)) scale(.9)`, offset: .72 },
+          { opacity: 0, transform: `translate3d(${motion.dx}px, ${motion.dy}px, 0) rotate(var(--star-angle)) scale(.45)` },
+        ], { duration: motion.duration, easing: 'linear', fill: 'both' })
         animations.add(animation)
         animation.finished.then(() => {
           animations.delete(animation)
-          if (!cancelled) launch(element, 1800 + Math.random() * 3600)
+          if (!cancelled) launch(element, randomMotion(), 850 + Math.random() * 3200)
         }).catch(() => animations.delete(animation))
-      }, delay)
+      }, quiet)
       timers.add(timer)
     }
-    elements.forEach((element, index) => launch(element, index * 1700))
+
+    elements.forEach((element, index) => launch(element, launches[index] ?? randomMotion(), launches[index]?.delay ?? 0))
     return () => {
       cancelled = true
       timers.forEach((timer) => window.clearTimeout(timer))
@@ -74,7 +81,7 @@ function ShootingStars() {
   }, [])
 
   return <div className="shooting-stars" aria-hidden="true">
-    {['particle-one', 'particle-two', 'particle-three', 'particle-four'].map((className, index) => <span key={className} ref={(element) => { particles.current[index] = element }} className={`shooting-particle ${className}`} />)}
+    {["star-one", "star-two", "star-three", "star-four"].map((className, index) => <span key={className} ref={(element) => { stars.current[index] = element }} className={`shooting-star ${className}`} />)}
   </div>
 }
 
