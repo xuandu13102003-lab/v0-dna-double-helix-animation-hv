@@ -28,7 +28,6 @@ function getGeometryLength(element: Geometry) {
 
 const groups = ['plate', 'layers', 'cream', 'candles', 'berries', 'bubbles', 'fireworks', 'envelope'] as const
 const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng nhaa, giữ vững phong độ và ngủ cười khà khà thật nhiềuuu. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa 💖💖'
-const titleLetters = ['M8 52V10h18c18 0 18 20 0 20H8m18 0 20 22', 'M62 10v42m0-42 25 42m0-42v42', 'M112 20c-18-14-28 28-6 32 16 3 24-15 12-29m-16-13 8-8', 'M166 10v42m0-42h18c18 0 18 22 0 22h-18m18 0 20 20', 'M224 10v42m0-42 25 42m0-42v42', 'M276 10v42m0-42 25 42m0-42v42']
 
 function ShootingStars() {
   const particles = useRef<(HTMLSpanElement | null)[]>([])
@@ -126,7 +125,6 @@ export default function Page() {
   const [balloonFloating, setBalloonFloating] = useState<boolean[]>([false, false, false, false])
   const [open, setOpen] = useState(false); const [drawing, setDrawing] = useState(true); const [pen, setPen] = useState<{ x: number; y: number } | null>(null)
   const drawingRef = useRef<SVGSVGElement | null>(null)
-  const titleRef = useRef<SVGSVGElement | null>(null)
   const geometries = useRef<Geometry[]>([]); const raf = useRef<number | undefined>(undefined); const balloonRaf = useRef<number | undefined>(undefined); const runId = useRef(0)
   const balloonGroups = useRef<(SVGGElement | null)[]>([])
   const balloonGeometries = useRef<Geometry[][]>([[], [], [], []])
@@ -244,17 +242,6 @@ export default function Page() {
     requestAnimationFrame(animateFlight)
   }, [balloonBusy, balloonDrawn])
   useEffect(() => {
-    const paths = [...(titleRef.current?.querySelectorAll<SVGPathElement>('[data-title-letter]') ?? [])]
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
-    paths.forEach((path) => { const length = getGeometryLength(path) ?? 1; path.style.strokeDasharray = `${length}`; path.style.strokeDashoffset = reduced ? '0' : `${length}`; path.style.fillOpacity = reduced ? '1' : '0' })
-    if (reduced) return
-    let frame = 0; let index = 0; let started = performance.now()
-    const drawTitle = (now: number) => { const path = paths[index]; if (!path) return; const length = getGeometryLength(path) ?? 1; const progress = Math.min(1, (now - started) / Math.max(220, length * 3.2)); path.style.strokeDashoffset = `${length * (1 - progress)}`; if (progress >= 1) { path.style.fillOpacity = '1'; index += 1; started = now + 50 }; frame = requestAnimationFrame(drawTitle) }
-    frame = requestAnimationFrame(drawTitle)
-    return () => cancelAnimationFrame(frame)
-  }, [drawing])
-
-  useEffect(() => {
     if (!balloonDrawn.some(Boolean)) return
     const animateBalloons = (now: number) => {
       const elapsedFor = (index: number) => balloonStartedAt.current[index] ? (now - balloonStartedAt.current[index]) / 1000 : 0
@@ -292,7 +279,7 @@ export default function Page() {
   const line = (group: string, d: string, className = '', children?: ReactNode, ref = register) => <path ref={ref} data-stroke data-group={group} className={className} d={d}>{children}</path>
   return <main className="gift-page">
     <Fireworks active={states[6] === 'complete'} />
-    <header className="intro"><p className="eyebrow">A little line of magic</p><h1>For Bảo Ngọc</h1><svg ref={titleRef} className="title-drawing" viewBox="0 0 330 62" aria-hidden="true">{titleLetters.map((d, index) => <path key={index} data-title-letter d={d} className="title-path" />)}</svg></header>
+    <header className="intro"><p className="eyebrow">A little line of magic</p><h1>For Bảo Ngọc</h1></header>
     <section className="scene" aria-label="Bức tranh bánh sinh nhật đang đ��ợc vẽ">
       <ShootingStars />
       <svg ref={drawingRef} className="drawing" viewBox="0 0 700 600" role="img" aria-label="Bức tranh bánh sinh nhật"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
