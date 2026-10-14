@@ -27,6 +27,7 @@ function getGeometryLength(element: Geometry) {
 }
 
 const groups = ['plate', 'layers', 'cream', 'candles', 'berries', 'bubbles', 'fireworks', 'envelope'] as const
+function buildDripPath(cx: number, cy: number, rx: number, ry: number, dripCount: number, lengths: number[]) { const point = (t: number) => ({ x: cx + rx * Math.cos(t), y: cy + ry * Math.sin(t) }); let d = `M ${point(0).x} ${point(0).y}`; for (let i = 0; i < dripCount; i += 1) { const a = Math.PI * i / dripCount, b = Math.PI * (i + 1) / dripCount, m = (a + b) / 2; const s = point(a), e = point(b), c = point(m), w = Math.min(18, Math.max(14, rx * Math.PI / dripCount * .42)) / 2, l = point(m - w / rx), r = point(m + w / rx), len = lengths[i % lengths.length], tip = l.y + len; d += ` C ${s.x} ${s.y} ${l.x} ${l.y} ${l.x} ${l.y} L ${l.x} ${tip - len * .25} C ${l.x} ${tip - len * .04} ${c.x} ${tip + len * .12} ${c.x} ${tip} C ${c.x} ${tip + len * .12} ${r.x} ${tip - len * .04} ${r.x} ${tip - len * .25} L ${r.x} ${r.y} C ${r.x} ${r.y} ${e.x} ${e.y} ${e.x} ${e.y}` } return d }
 const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng nhaa, giữ vững phong độ và ngủ cười khà khà thật nhiềuuu. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa 💖💖'
 
 function ShootingStars() {
@@ -223,7 +224,7 @@ export default function Page() {
     balloonRaf.current = requestAnimationFrame(animateBalloons)
     return () => { if (balloonRaf.current) cancelAnimationFrame(balloonRaf.current) }
   }, [completed])
-  const line = (group: string, d: string, className = '', children?: ReactNode, ref = register) => <path ref={ref} data-stroke data-group={group} className={className} d={d}>{children}</path>
+  const line = (group: string, d: string, className = '', children?: ReactNode, ref = register) => <path ref={ref} data-stroke data-group={group} className={className} pathLength="1" d={d}>{children}</path>
   return <main className="gift-page">
     <Fireworks active={states[6] === 'complete'} />
     <header className="intro"><p className="eyebrow">A little line of magic</p><h1>For Bảo Ngọc</h1></header>
