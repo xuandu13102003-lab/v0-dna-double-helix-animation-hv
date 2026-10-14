@@ -121,6 +121,7 @@ function Fireworks({ active }: { active: boolean }) {
 export default function Page() {
   const [states, setStates] = useState<StrokeState[]>(groups.map(() => 'pending'))
   const [open, setOpen] = useState(false); const [drawing, setDrawing] = useState(true); const [pen, setPen] = useState<{ x: number; y: number } | null>(null)
+  const drawingRef = useRef<SVGSVGElement | null>(null)
   const geometries = useRef<Geometry[]>([]); const raf = useRef<number | undefined>(undefined); const balloonRaf = useRef<number | undefined>(undefined); const runId = useRef(0)
   const balloonGroups = useRef<(SVGGElement | null)[]>([])
   const balloonStrings = useRef<(Geometry | null)[]>([])
@@ -162,7 +163,16 @@ export default function Page() {
       element.style.opacity = '1'
       element.style.strokeDashoffset = `${length * (1 - progress)}`
       const point = element.getPointAtLength(length * progress)
-      setPen({ x: point.x, y: point.y })
+      const svg = drawingRef.current
+      const elementMatrix = element.getScreenCTM()
+      const svgMatrix = svg?.getScreenCTM()
+      if (svg && elementMatrix && svgMatrix) {
+        const screenPoint = new DOMPoint(point.x, point.y).matrixTransform(elementMatrix)
+        const svgPoint = screenPoint.matrixTransform(svgMatrix.inverse())
+        setPen({ x: svgPoint.x, y: svgPoint.y })
+      } else {
+        setPen({ x: point.x, y: point.y })
+      }
       if (progress >= 1) {
         element.style.strokeDashoffset = '0'
         const finishedGroup = element.dataset.group
@@ -229,7 +239,7 @@ export default function Page() {
     <header className="intro"><p className="eyebrow">A little line of magic</p><h1>For Bảo Ngọc</h1></header>
     <section className="scene" aria-label="Bức tranh bánh sinh nhật đang đ��ợc vẽ">
       <ShootingStars />
-      <svg className="drawing" viewBox="0 0 700 600" role="img" aria-label="Bức tranh bánh sinh nhật"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
+      <svg ref={drawingRef} className="drawing" viewBox="0 0 700 600" role="img" aria-label="Bức tranh bánh sinh nhật"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
         {line('plate', 'M130 505c12 25 429 25 440 0')}{line('plate', 'M130 505c40-30 400-30 440 0')}
         {line('layers', 'M178 420v62c38 26 306 26 344 0v-62')}{line('layers', 'M178 420c24 29 320 29 344 0')}{line('layers', 'M205 345v75c35 24 255 24 290 0v-75')}{line('layers', 'M205 345c22 26 268 26 290 0')}{line('layers', 'M237 277v68c29 21 197 21 226 0v-68')}{line('layers', 'M237 277c22 24 204 24 226 0')}
         {line('cream', 'M237 277c8 32 17 36 27 0 10 42 23 48 34 0 10 28 25 34 37 0 12 42 27 43 40 0 13 31 29 34 42 0 11 37 27 38 46 0', 'cream-line')}{line('cream', 'M205 345c11 38 21 42 41.43 0 11 38 21 42 41.43 0 11 38 21 42 41.43 0 11 38 21 42 41.43 0 11 38 21 42 41.43 0 11 38 21 42 41.43 0 11 38 21 42 41.43 0', 'cream-line')}
