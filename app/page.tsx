@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import SparklerTrail from '@/components/SparklerTrail'
 
 type StrokeState = 'pending' | 'drawing' | 'complete'
 type Geometry = SVGPathElement
@@ -277,8 +278,9 @@ export default function Page() {
     return () => { if (balloonRaf.current) cancelAnimationFrame(balloonRaf.current) }
   }, [balloonDrawn])
   const line = (group: string, d: string, className = '', children?: ReactNode, ref = register) => <path ref={ref} data-stroke data-group={group} className={className} d={d}>{children}</path>
-  return <main className="gift-page">
-    <Fireworks active={states[6] === 'complete'} />
+return <main className="gift-page">
+  <SparklerTrail enabled={!drawing} />
+  <Fireworks active={states[6] === 'complete'} />
     <header className="intro"><p className="eyebrow">A little line of magic</p><h1>For Bảo Ngọc</h1></header>
     <section className="scene" aria-label="Bức tranh bánh sinh nhật đang đ��ợc vẽ">
       <ShootingStars />
