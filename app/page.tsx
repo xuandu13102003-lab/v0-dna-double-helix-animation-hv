@@ -127,11 +127,12 @@ export default function Page() {
   const balloonGroups = useRef<(SVGGElement | null)[]>([])
   const balloonStrings = useRef<(Geometry | null)[]>([])
   const balloonStartedAt = useRef<number[]>([0, 0, 0, 0])
+  const balloonSwayBlendAt = useRef<number[]>([0, 0, 0, 0])
   const register = (element: Geometry | null) => { if (element && !geometries.current.includes(element)) geometries.current.push(element) }
   const registerBalloonGroup = (element: SVGGElement | null, index: number) => { balloonGroups.current[index] = element }
   const registerBalloonString = (element: Geometry | null, index: number) => { balloonStrings.current[index] = element; register(element) }
   const replay = useCallback(() => {
-    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setDrawing(true); setStates(groups.map(() => 'pending')); setBalloonDrawn([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]
+    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setDrawing(true); setStates(groups.map(() => 'pending')); setBalloonDrawn([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]; balloonSwayBlendAt.current = [0, 0, 0, 0]
     const groupOrder = new Map(groups.map((group, index) => [group, index]))
     const ordered = geometries.current
       .filter((element) => getGeometryLength(element) !== null)
@@ -178,7 +179,7 @@ export default function Page() {
       if (progress >= 1) {
         element.style.strokeDashoffset = '0'
         const balloonIndex = balloonStrings.current.indexOf(element)
-        if (balloonIndex >= 0) { balloonStartedAt.current[balloonIndex] = performance.now(); setBalloonDrawn((drawn) => drawn[balloonIndex] ? drawn : drawn.map((value, index) => index === balloonIndex ? true : value)) }
+        if (balloonIndex >= 0) { const completedAt = performance.now(); balloonStartedAt.current[balloonIndex] = completedAt; balloonSwayBlendAt.current[balloonIndex] = completedAt; setBalloonDrawn((drawn) => drawn[balloonIndex] ? drawn : drawn.map((value, index) => index === balloonIndex ? true : value)) }
         const finishedGroup = element.dataset.group
         index += 1
         if (ordered[index]?.dataset.group !== finishedGroup) {
@@ -208,6 +209,7 @@ export default function Page() {
     if (!balloonDrawn.some(Boolean)) return
     const animateBalloons = (now: number) => {
       const elapsedFor = (index: number) => balloonStartedAt.current[index] ? (now - balloonStartedAt.current[index]) / 1000 : 0
+      const blendFor = (index: number) => { const elapsed = balloonSwayBlendAt.current[index] ? (now - balloonSwayBlendAt.current[index]) / 1000 : 0; const t = Math.min(1, elapsed / .7); return t * t * (3 - 2 * t) }
       const motion = [
         { phase: 0, speed: 0.92, sway: 8, lift: 14 },
         { phase: 1.8, speed: 0.72, sway: 13, lift: 19 },
@@ -217,12 +219,13 @@ export default function Page() {
       motion.forEach((balloon, index) => {
         if (!balloonDrawn[index]) return
         const wave = elapsedFor(index) * balloon.speed + balloon.phase
-        const x = Math.sin(wave) * balloon.sway
-        const y = Math.sin(wave * 1.35) * balloon.lift
+        const blend = blendFor(index)
+        const x = Math.sin(wave) * balloon.sway * blend
+        const y = Math.sin(wave * 1.35) * balloon.lift * blend
         const string = balloonStrings.current[index]
         if (string) {
-          const bend = Math.sin(wave - 0.55) * 9
-          const delayedBend = Math.sin(wave * 0.92 - 0.9) * 4
+          const bend = Math.sin(wave - 0.55) * 9 * blend
+          const delayedBend = Math.sin(wave * 0.92 - 0.9) * 4 * blend
           const start = index === 0 ? [130, 236] : index === 1 ? [560, 288] : index === 2 ? [108, 346] : [598, 388]
           const endY = index === 0 ? 292 : index === 1 ? 354 : index === 2 ? 388 : 438
           string.setAttribute('d', `M${start[0]} ${start[1]} C ${start[0] + bend * 0.45} ${start[1] + 16}, ${start[0] + delayedBend} ${start[1] + 34}, ${start[0] + bend} ${endY}`)
