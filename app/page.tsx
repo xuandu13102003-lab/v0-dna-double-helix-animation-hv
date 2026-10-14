@@ -120,16 +120,18 @@ function Fireworks({ active }: { active: boolean }) {
 
 export default function Page() {
   const [states, setStates] = useState<StrokeState[]>(groups.map(() => 'pending'))
+  const [balloonDrawn, setBalloonDrawn] = useState<boolean[]>([false, false, false, false])
   const [open, setOpen] = useState(false); const [drawing, setDrawing] = useState(true); const [pen, setPen] = useState<{ x: number; y: number } | null>(null)
   const drawingRef = useRef<SVGSVGElement | null>(null)
   const geometries = useRef<Geometry[]>([]); const raf = useRef<number | undefined>(undefined); const balloonRaf = useRef<number | undefined>(undefined); const runId = useRef(0)
   const balloonGroups = useRef<(SVGGElement | null)[]>([])
   const balloonStrings = useRef<(Geometry | null)[]>([])
+  const balloonStartedAt = useRef<number[]>([0, 0, 0, 0])
   const register = (element: Geometry | null) => { if (element && !geometries.current.includes(element)) geometries.current.push(element) }
   const registerBalloonGroup = (element: SVGGElement | null, index: number) => { balloonGroups.current[index] = element }
   const registerBalloonString = (element: Geometry | null, index: number) => { balloonStrings.current[index] = element; register(element) }
   const replay = useCallback(() => {
-    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setDrawing(true); setStates(groups.map(() => 'pending'))
+    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setDrawing(true); setStates(groups.map(() => 'pending')); setBalloonDrawn([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]
     const groupOrder = new Map(groups.map((group, index) => [group, index]))
     const ordered = geometries.current
       .filter((element) => getGeometryLength(element) !== null)
@@ -175,6 +177,8 @@ export default function Page() {
       }
       if (progress >= 1) {
         element.style.strokeDashoffset = '0'
+        const balloonIndex = balloonStrings.current.indexOf(element)
+        if (balloonIndex >= 0) { balloonStartedAt.current[balloonIndex] = performance.now(); setBalloonDrawn((drawn) => drawn[balloonIndex] ? drawn : drawn.map((value, index) => index === balloonIndex ? true : value)) }
         const finishedGroup = element.dataset.group
         index += 1
         if (ordered[index]?.dataset.group !== finishedGroup) {
@@ -201,10 +205,9 @@ export default function Page() {
   }, [replay])
   const completed = states.length === groups.length && states.every((state) => state === 'complete')
   useEffect(() => {
-    if (!completed) return
-    const startedAt = performance.now()
+    if (!balloonDrawn.some(Boolean)) return
     const animateBalloons = (now: number) => {
-      const elapsed = (now - startedAt) / 1000
+      const elapsedFor = (index: number) => balloonStartedAt.current[index] ? (now - balloonStartedAt.current[index]) / 1000 : 0
       const motion = [
         { phase: 0, speed: 0.92, sway: 8, lift: 14 },
         { phase: 1.8, speed: 0.72, sway: 13, lift: 19 },
@@ -212,7 +215,8 @@ export default function Page() {
         { phase: 4.6, speed: 0.84, sway: 10, lift: 16 },
       ]
       motion.forEach((balloon, index) => {
-        const wave = elapsed * balloon.speed + balloon.phase
+        if (!balloonDrawn[index]) return
+        const wave = elapsedFor(index) * balloon.speed + balloon.phase
         const x = Math.sin(wave) * balloon.sway
         const y = Math.sin(wave * 1.35) * balloon.lift
         const string = balloonStrings.current[index]
@@ -232,7 +236,7 @@ export default function Page() {
     }
     balloonRaf.current = requestAnimationFrame(animateBalloons)
     return () => { if (balloonRaf.current) cancelAnimationFrame(balloonRaf.current) }
-  }, [completed])
+  }, [balloonDrawn])
   const line = (group: string, d: string, className = '', children?: ReactNode, ref = register) => <path ref={ref} data-stroke data-group={group} className={className} d={d}>{children}</path>
   return <main className="gift-page">
     <Fireworks active={states[6] === 'complete'} />
