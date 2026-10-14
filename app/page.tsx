@@ -48,32 +48,20 @@ function ShootingStars() {
           dx: (Math.random() > .5 ? 1 : -1) * (30 + Math.random() * 50),
           dy: 18 + Math.random() * 32,
           duration: 1500 + Math.random() * 1300,
-          trail: 12 + Math.random() * 13,
         }
         element.style.left = `${motion.x}%`
         element.style.top = `${motion.y}%`
-        element.style.setProperty('--particle-trail-angle', `${Math.atan2(motion.dy, motion.dx) * 180 / Math.PI}deg`)
-        element.style.setProperty('--particle-trail-length', `${motion.trail}px`)
-        const dot = element.querySelector<HTMLElement>('.particle-dot')
-        const trails = [...element.querySelectorAll<HTMLElement>('.particle-trail')]
-        const dotAnimation = dot?.animate([
-          { opacity: 0, transform: 'translate(-1.5px, -1.5px) scale(.7)' },
-          { opacity: 1, transform: 'translate(-1.5px, -1.5px) scale(1)', offset: .16 },
-          { opacity: .92, transform: `translate(${motion.dx * .72 - 1.5}px, ${motion.dy * .72 - 1.5}px) scale(.95)`, offset: .76 },
-          { opacity: 0, transform: `translate(${motion.dx - 1.5}px, ${motion.dy - 1.5}px) scale(.55)` },
+        const animation = element.animate([
+          { opacity: 0, transform: 'translate(0, 0) scale(.65)' },
+          { opacity: .72, transform: 'translate(8px, 5px) scale(1)', offset: .2 },
+          { opacity: .64, transform: `translate(${motion.dx * .72}px, ${motion.dy * .72}px) scale(.95)`, offset: .72 },
+          { opacity: 0, transform: `translate(${motion.dx}px, ${motion.dy}px) scale(.7)` },
         ], { duration: motion.duration, easing: 'ease-in-out', fill: 'both' })
-        const trailAnimations = trails.map((trail, trailIndex) => trail.animate([
-          { opacity: 0, transform: 'translate(-2px, -0.5px) scaleX(.25)' },
-          { opacity: .28 - trailIndex * .045, transform: `translate(${motion.dx * .08 - 2}px, ${motion.dy * .08 - .5}px) scaleX(1)`, offset: .18 },
-          { opacity: .16 - trailIndex * .025, transform: `translate(${motion.dx * .72 - 2}px, ${motion.dy * .72 - .5}px) scaleX(.8)`, offset: .76 },
-          { opacity: 0, transform: `translate(${motion.dx - 2}px, ${motion.dy - .5}px) scaleX(.35)` },
-        ], { duration: motion.duration, delay: trailIndex * 65, easing: 'ease-in-out', fill: 'both' }))
-        const runningAnimations = [dotAnimation, ...trailAnimations].filter((animation): animation is Animation => Boolean(animation))
-        runningAnimations.forEach((animation) => animations.add(animation))
-        dotAnimation?.finished.then(() => {
-          runningAnimations.forEach((animation) => animations.delete(animation))
+        animations.add(animation)
+        animation.finished.then(() => {
+          animations.delete(animation)
           if (!cancelled) launch(element, 1800 + Math.random() * 3600)
-        }).catch(() => runningAnimations.forEach((animation) => animations.delete(animation)))
+        }).catch(() => animations.delete(animation))
       }, delay)
       timers.add(timer)
     }
@@ -86,7 +74,7 @@ function ShootingStars() {
   }, [])
 
   return <div className="shooting-stars" aria-hidden="true">
-    {['particle-one', 'particle-two', 'particle-three', 'particle-four'].map((className, index) => <span key={className} ref={(element) => { particles.current[index] = element }} className={`shooting-particle ${className}`}><span className="particle-trail particle-trail-back" /><span className="particle-trail particle-trail-mid" /><span className="particle-trail particle-trail-front" /><span className="particle-dot" /></span>)}
+    {['particle-one', 'particle-two', 'particle-three', 'particle-four'].map((className, index) => <span key={className} ref={(element) => { particles.current[index] = element }} className={`shooting-particle ${className}`} />)}
   </div>
 }
 
