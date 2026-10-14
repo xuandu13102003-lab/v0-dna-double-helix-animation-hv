@@ -125,6 +125,7 @@ export default function Page() {
   const [balloonFloating, setBalloonFloating] = useState<boolean[]>([false, false, false, false])
   const [open, setOpen] = useState(false); const [drawing, setDrawing] = useState(true); const [pen, setPen] = useState<{ x: number; y: number } | null>(null)
   const drawingRef = useRef<SVGSVGElement | null>(null)
+  const titleRef = useRef<SVGTextElement | null>(null)
   const geometries = useRef<Geometry[]>([]); const raf = useRef<number | undefined>(undefined); const balloonRaf = useRef<number | undefined>(undefined); const runId = useRef(0)
   const balloonGroups = useRef<(SVGGElement | null)[]>([])
   const balloonGeometries = useRef<Geometry[][]>([[], [], [], []])
@@ -242,6 +243,19 @@ export default function Page() {
     requestAnimationFrame(animateFlight)
   }, [balloonBusy, balloonDrawn])
   useEffect(() => {
+    const title = titleRef.current
+    if (!title) return
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
+    const length = title.getComputedTextLength()
+    title.style.strokeDasharray = `${length}`; title.style.strokeDashoffset = reduced ? '0' : `${length}`; title.style.fillOpacity = reduced ? '1' : '0'
+    if (reduced) return
+    let frame = 0; const started = performance.now(); const duration = Math.max(900, length * 8)
+    const drawTitle = (now: number) => { const progress = Math.min(1, (now - started) / duration); title.style.strokeDashoffset = `${length * (1 - progress)}`; if (progress >= 1) { title.style.fillOpacity = '1'; return }; frame = requestAnimationFrame(drawTitle) }
+    frame = requestAnimationFrame(drawTitle)
+    return () => cancelAnimationFrame(frame)
+  }, [drawing])
+
+  useEffect(() => {
     if (!balloonDrawn.some(Boolean)) return
     const animateBalloons = (now: number) => {
       const elapsedFor = (index: number) => balloonStartedAt.current[index] ? (now - balloonStartedAt.current[index]) / 1000 : 0
@@ -279,7 +293,7 @@ export default function Page() {
   const line = (group: string, d: string, className = '', children?: ReactNode, ref = register) => <path ref={ref} data-stroke data-group={group} className={className} d={d}>{children}</path>
   return <main className="gift-page">
     <Fireworks active={states[6] === 'complete'} />
-    <header className="intro"><p className="eyebrow">A little line of magic</p><h1>For Bảo Ngọc</h1></header>
+    <header className="intro"><p className="eyebrow">A little line of magic</p><svg className="title-drawing" viewBox="0 0 420 70" role="img" aria-label="For Bảo Ngọc"><text ref={titleRef} x="210" y="51" textAnchor="middle">For Bảo Ngọc</text></svg></header>
     <section className="scene" aria-label="Bức tranh bánh sinh nhật đang đ��ợc vẽ">
       <ShootingStars />
       <svg ref={drawingRef} className="drawing" viewBox="0 0 700 600" role="img" aria-label="Bức tranh bánh sinh nhật"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
