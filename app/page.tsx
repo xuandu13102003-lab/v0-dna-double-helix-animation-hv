@@ -130,6 +130,8 @@ export default function Page() {
   const activeBalloonDrawings = useRef(0)
   const redrawQueue = useRef<(() => void)[]>([])
   const redrawActive = useRef(false)
+  const balloonDrawnRef = useRef([false, false, false, false])
+  const balloonBusyRef = useRef([false, false, false, false])
   const balloonGeometries = useRef<Geometry[][]>([[], [], [], []])
   const balloonStrings = useRef<(Geometry | null)[]>([])
   const balloonStartedAt = useRef<number[]>([0, 0, 0, 0])
@@ -137,8 +139,10 @@ export default function Page() {
   const register = (element: Geometry | null) => { if (element && !geometries.current.includes(element)) geometries.current.push(element) }
   const registerBalloonGroup = (element: SVGGElement | null, index: number) => { balloonGroups.current[index] = element; if (element) balloonGeometries.current[index] = Array.from(element.querySelectorAll<Geometry>('[data-stroke]')) }
   const registerBalloonString = (element: Geometry | null, index: number) => { balloonStrings.current[index] = element; register(element) }
+  useEffect(() => { balloonDrawnRef.current = balloonDrawn }, [balloonDrawn])
+  useEffect(() => { balloonBusyRef.current = balloonBusy }, [balloonBusy])
   const replay = useCallback(() => {
-    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setPenVisible(true); redrawQueue.current = []; redrawActive.current = false; setDrawing(true); setStates(groups.map(() => 'pending')); setBalloonDrawn([false, false, false, false]); setBalloonBusy([false, false, false, false]); setBalloonFloating([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]; balloonSwayBlendAt.current = [0, 0, 0, 0]
+    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setPenVisible(true); redrawQueue.current = []; redrawActive.current = false; balloonDrawnRef.current = [false, false, false, false]; balloonBusyRef.current = [false, false, false, false]; setDrawing(true); setStates(groups.map(() => 'pending')); setBalloonDrawn([false, false, false, false]); setBalloonBusy([false, false, false, false]); setBalloonFloating([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]; balloonSwayBlendAt.current = [0, 0, 0, 0]
     const groupOrder = new Map(groups.map((group, index) => [group, index]))
     const ordered = geometries.current
       .filter((element) => getGeometryLength(element) !== null)
@@ -216,7 +220,7 @@ export default function Page() {
     const group = balloonGroups.current[index]; const paths = balloonGeometries.current[index]
     if (!group || !paths.length) return
     const bounds = group.getBoundingClientRect(); const sizeFactor = Math.max(.72, Math.min(1.35, bounds.height / 180)); const drift = (index % 2 === 0 ? 1 : -1) * (12 + Math.random() * 12); const exitDistance = -(bounds.top + bounds.height + 32); const flightDuration = 1500 + sizeFactor * 320 + Math.random() * 220
-    setBalloonBusy((busy) => busy.map((value, i) => i === index ? true : value)); setBalloonFloating((floating) => floating.map((value, i) => i === index ? true : value))
+    balloonBusyRef.current = balloonBusyRef.current.map((value, i) => i === index ? true : value); setBalloonBusy(balloonBusyRef.current); setBalloonFloating((floating) => floating.map((value, i) => i === index ? true : value))
     const startedAt = performance.now(); const tugDuration = 150; const startTransform = group.getAttribute('transform') || ''
     const animateFlight = (now: number) => {
       const elapsed = now - startedAt
@@ -233,7 +237,7 @@ export default function Page() {
       let pathIndex = 0; let started = 0
       const drawBalloon = (now: number) => {
         const path = paths[pathIndex]
-        if (!path) { const swayStart = performance.now(); balloonStartedAt.current[index] = swayStart; balloonSwayBlendAt.current[index] = swayStart; activeBalloonDrawings.current = Math.max(0, activeBalloonDrawings.current - 1); if (activeBalloonDrawings.current === 0) { setPen(null); setPenVisible(false); redrawActive.current = false; window.setTimeout(() => redrawQueue.current.shift()?.(), 140) }; setBalloonDrawn((drawn) => drawn.map((value, i) => i === index ? true : value)); setBalloonBusy((busy) => busy.map((value, i) => i === index ? false : value)); return }
+        if (!path) { const swayStart = performance.now(); balloonStartedAt.current[index] = swayStart; balloonSwayBlendAt.current[index] = swayStart; activeBalloonDrawings.current = Math.max(0, activeBalloonDrawings.current - 1); if (activeBalloonDrawings.current === 0) { setPen(null); setPenVisible(false); redrawActive.current = false; window.setTimeout(() => redrawQueue.current.shift()?.(), 140) }; setBalloonDrawn((drawn) => drawn.map((value, i) => i === index ? true : value)); balloonBusyRef.current = balloonBusyRef.current.map((value, i) => i === index ? false : value); setBalloonBusy(balloonBusyRef.current); return }
         const length = getGeometryLength(path) ?? 1; const progress = Math.min(1, Math.max(0, (now - started) / Math.max(260, length * 3.2)))
         path.style.opacity = '1'; path.style.strokeDashoffset = `${length * (1 - progress)}`
         const point = path.getPointAtLength(length * progress)
@@ -247,7 +251,7 @@ export default function Page() {
       if (!redrawActive.current) redrawQueue.current.shift()?.()
     }
     requestAnimationFrame(animateFlight)
-  }, [balloonBusy, balloonDrawn])
+  }, [])
   useEffect(() => {
     if (!balloonDrawn.some(Boolean)) return
     const animateBalloons = (now: number) => {
@@ -260,7 +264,7 @@ export default function Page() {
         { phase: 4.6, speed: 0.84, sway: 10, lift: 16 },
       ]
       motion.forEach((balloon, index) => {
-        if (!balloonDrawn[index] || balloonBusy[index]) return
+    if (!balloonDrawnRef.current[index] || balloonBusyRef.current[index]) return
         const wave = elapsedFor(index) * balloon.speed + balloon.phase
         const blend = blendFor(index)
         const x = Math.sin(wave) * balloon.sway * blend
