@@ -47,10 +47,10 @@ function frostingPath(rim: Rim, count: number, seed: number) {
     const height = halfWidth * (.95 + random() * 1.15)
     bumps.push({ x: center.x, halfWidth, height })
   }
-  const smoothMax = (a: number, b: number) => { const softness = 3.5; const delta = a - b; return (a + b + Math.sqrt(delta * delta + softness * softness) - softness) / 2 }
+  const smoothMax = (a: number, b: number) => { const softness = 6; const delta = a - b; return (a + b + Math.sqrt(delta * delta + softness * softness) - softness) / 2 }
   const left = rim.cx - rim.rx; const right = rim.cx + rim.rx; const samples = Math.ceil(right - left); let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)}`
   const edgeDepth = (x: number, progress: number) => {
-    let depth = base + 2.5 * Math.sin(progress * Math.PI * 3) + 1.2 * Math.sin(progress * Math.PI * 7)
+    let depth = base + 1.1 * Math.sin(progress * Math.PI * 2) + 0.35 * Math.sin(progress * Math.PI * 5)
     bumps.forEach((bump) => {
       const normalized = (x - bump.x) / bump.halfWidth
       if (Math.abs(normalized) < 1) { const profile = Math.sqrt(Math.max(0, 1 - normalized * normalized)); const easedProfile = profile * profile * (3 - 2 * profile); const dripDepth = bump.height * easedProfile; depth = smoothMax(depth, dripDepth) }
@@ -64,7 +64,7 @@ function frostingPath(rim: Rim, count: number, seed: number) {
     path += ` C${controlOne.x.toFixed(1)} ${controlOne.y.toFixed(1)} ${controlTwo.x.toFixed(1)} ${controlTwo.y.toFixed(1)} ${current.x.toFixed(1)} ${current.y.toFixed(1)}`
   }
   const rimPassSamples = Math.ceil((right - left) / 1.5)
-  const rimWaveY = (x: number) => rimY(x) + 1.6 * Math.sin(((x - left) / (right - left)) * Math.PI * 4)
+  const rimWaveY = (x: number) => rimY(x) + 0.7 * Math.sin(((x - left) / (right - left)) * Math.PI * 2)
   let previousRim = { x: right, y: rimWaveY(right) }
   for (let index = 1; index <= rimPassSamples; index += 1) {
     const x = right - (right - left) * (index / rimPassSamples); const currentRim = { x, y: rimWaveY(x) }; const beforeRim = { x: Math.min(right, x + 2), y: rimWaveY(Math.min(right, x + 2)) }; const afterRim = { x: Math.max(left, x - 2), y: rimWaveY(Math.max(left, x - 2)) }
