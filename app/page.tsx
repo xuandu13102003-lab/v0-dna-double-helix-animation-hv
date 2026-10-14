@@ -97,11 +97,11 @@ function Fireworks({ active }: { active: boolean }) {
     let frame = 0; let nextLaunch = 250 + Math.random() * 700; let last = performance.now()
     const resize = () => { const ratio = Math.min(2, devicePixelRatio || 1); canvas.width = innerWidth * ratio; canvas.height = innerHeight * ratio; canvas.style.width = `${innerWidth}px`; canvas.style.height = `${innerHeight}px`; ctx.setTransform(ratio, 0, 0, ratio, 0, 0) }
     const origin = () => ({ x: innerWidth / 2, y: innerHeight - 18 })
-    const launch = () => {
-      const start = origin(); const targetX = innerWidth * (.08 + Math.random() * .84); const targetY = innerHeight * (.08 + Math.random() * .55)
-      const flight = 700 + Math.random() * 650; const dx = targetX - start.x; const dy = targetY - start.y
+    const launch = (targetX = innerWidth * (.08 + Math.random() * .84), targetY = innerHeight * (.08 + Math.random() * .55)) => {
+      const start = origin(); const flight = 700 + Math.random() * 650; const dx = targetX - start.x; const dy = targetY - start.y
       rockets.push({ x: start.x, y: start.y, vx: dx / flight * 16.67, vy: dy / flight * 16.67, targetX, targetY, color: colors[Math.floor(Math.random() * colors.length)], trail: [] })
     }
+    const launchAtPointer = (event: MouseEvent) => launch(event.clientX, event.clientY)
     const burst = (rocket: Rocket) => { const count = 38 + Math.floor(Math.random() * 28); for (let i = 0; i < count; i += 1) { const angle = Math.random() * Math.PI * 2; const speed = (.8 + Math.random() * 3.2) * .82; sparks.push({ x: rocket.x, y: rocket.y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - Math.random() * .5, gravity: .018 + Math.random() * .03, drag: .985 + Math.random() * .01, life: 520 + Math.random() * 680, age: 0, size: .4 + Math.random() * 1.02, alpha: .45 + Math.random() * .5, color: colors[Math.floor(Math.random() * colors.length)], trail: [] }) } }
     const drawTrail = (trail: TrailPoint[], color: string, alpha: number, width: number) => { if (trail.length < 2) return; ctx.lineCap = 'round'; ctx.shadowBlur = 2.5; ctx.shadowColor = color; for (let i = 1; i < trail.length; i += 1) { const p = trail[i - 1]; const q = trail[i]; ctx.strokeStyle = `${color}${Math.round(alpha * (i / trail.length) * 255).toString(16).padStart(2, '0')}`; ctx.lineWidth = width * (.55 + .45 * (i / trail.length)); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke() } }
     const draw = (time: number) => {
@@ -112,8 +112,8 @@ function Fireworks({ active }: { active: boolean }) {
       for (let i = sparks.length - 1; i >= 0; i -= 1) { const spark = sparks[i]; spark.age += 16.67 * dt; spark.vx *= Math.pow(spark.drag, dt); spark.vy = spark.vy * Math.pow(spark.drag, dt) + spark.gravity * dt; spark.x += spark.vx * dt; spark.y += spark.vy * dt; spark.trail.push({ x: spark.x, y: spark.y }); if (spark.trail.length > 5) spark.trail.shift(); const fade = Math.max(0, 1 - spark.age / spark.life); drawTrail(spark.trail, spark.color, fade * spark.alpha * .84, Math.max(.5, spark.size * .78)); ctx.fillStyle = `${spark.color}${Math.round(fade * spark.alpha * 255).toString(16).padStart(2, '0')}`; ctx.shadowBlur = 5; ctx.shadowColor = spark.color; ctx.beginPath(); ctx.arc(spark.x, spark.y, spark.size, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; if (spark.age >= spark.life) sparks.splice(i, 1) }
       frame = requestAnimationFrame(draw)
     }
-    resize(); addEventListener('resize', resize); frame = requestAnimationFrame(draw)
-    return () => { cancelAnimationFrame(frame); removeEventListener('resize', resize); rockets.length = 0; sparks.length = 0 }
+    resize(); addEventListener('resize', resize); addEventListener('click', launchAtPointer); frame = requestAnimationFrame(draw)
+    return () => { cancelAnimationFrame(frame); removeEventListener('resize', resize); removeEventListener('click', launchAtPointer); rockets.length = 0; sparks.length = 0 }
   }, [active])
   return <canvas ref={ref} className="fireworks" aria-hidden="true" />
 }
