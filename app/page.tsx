@@ -128,6 +128,8 @@ export default function Page() {
   const geometries = useRef<Geometry[]>([]); const raf = useRef<number | undefined>(undefined); const balloonRaf = useRef<number | undefined>(undefined); const runId = useRef(0)
   const balloonGroups = useRef<(SVGGElement | null)[]>([])
   const activeBalloonDrawings = useRef(0)
+  const balloonDrawnRef = useRef<boolean[]>([false, false, false, false])
+  const balloonBusyRef = useRef<boolean[]>([false, false, false, false])
   const redrawQueue = useRef<number[]>([])
   const redrawJobs = useRef(new Map<number, () => void>())
   const redrawActive = useRef(false)
@@ -142,8 +144,10 @@ export default function Page() {
   const register = (element: Geometry | null) => { if (element && !geometries.current.includes(element)) geometries.current.push(element) }
   const registerBalloonGroup = (element: SVGGElement | null, index: number) => { balloonGroups.current[index] = element; if (element) balloonGeometries.current[index] = Array.from(element.querySelectorAll<Geometry>('[data-stroke]')) }
   const registerBalloonString = (element: Geometry | null, index: number) => { balloonStrings.current[index] = element; register(element) }
+  useEffect(() => { balloonDrawnRef.current = balloonDrawn }, [balloonDrawn])
+  useEffect(() => { balloonBusyRef.current = balloonBusy }, [balloonBusy])
   const replay = useCallback(() => {
-    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setPenVisible(true); redrawQueue.current = []; redrawJobs.current.clear(); redrawActive.current = false; if (redrawFrame.current) cancelAnimationFrame(redrawFrame.current); if (redrawFadeTimer.current) window.clearTimeout(redrawFadeTimer.current); balloonPhase.current = ['idle', 'idle', 'idle', 'idle']; setDrawing(true); setStates(groups.map(() => 'pending')); setBalloonDrawn([false, false, false, false]); setBalloonBusy([false, false, false, false]); setBalloonFloating([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]; balloonSwayBlendAt.current = [0, 0, 0, 0]
+    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setPenVisible(true); redrawQueue.current = []; redrawJobs.current.clear(); redrawActive.current = false; if (redrawFrame.current) cancelAnimationFrame(redrawFrame.current); if (redrawFadeTimer.current) cancelAnimationFrame(redrawFadeTimer.current); redrawFrame.current = undefined; redrawFadeTimer.current = undefined; balloonPhase.current = ['idle', 'idle', 'idle', 'idle']; setDrawing(true); setStates(groups.map(() => 'pending')); balloonDrawnRef.current = [false, false, false, false]; balloonBusyRef.current = [false, false, false, false]; setBalloonDrawn([false, false, false, false]); setBalloonBusy([false, false, false, false]); setBalloonFloating([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]; balloonSwayBlendAt.current = [0, 0, 0, 0]
     const groupOrder = new Map(groups.map((group, index) => [group, index]))
     const ordered = geometries.current
       .filter((element) => getGeometryLength(element) !== null)
@@ -227,11 +231,11 @@ export default function Page() {
     job()
   }
   const clickBalloon = useCallback((index: number) => {
-    if (!balloonDrawn[index] || balloonBusy[index]) return
+    if (!balloonDrawnRef.current[index] || balloonBusyRef.current[index] || balloonPhase.current[index] !== 'idle') return
     const group = balloonGroups.current[index]; const paths = balloonGeometries.current[index]
     if (!group || !paths.length) return
     const bounds = group.getBoundingClientRect(); const sizeFactor = Math.max(.72, Math.min(1.35, bounds.height / 180)); const drift = (index % 2 === 0 ? 1 : -1) * (12 + Math.random() * 12); const exitDistance = -(bounds.top + bounds.height + 32); const flightDuration = 1500 + sizeFactor * 320 + Math.random() * 220
-    balloonPhase.current[index] = 'floating'; setBalloonBusy((busy) => busy.map((value, i) => i === index ? true : value)); setBalloonFloating((floating) => floating.map((value, i) => i === index ? true : value))
+    balloonPhase.current[index] = 'floating'; balloonBusyRef.current[index] = true; setBalloonBusy((busy) => busy.map((value, i) => i === index ? true : value)); setBalloonFloating((floating) => floating.map((value, i) => i === index ? true : value))
     const startedAt = performance.now(); const tugDuration = 150; const startTransform = group.getAttribute('transform') || ''
     const animateFlight = (now: number) => {
       const elapsed = now - startedAt
@@ -248,7 +252,7 @@ export default function Page() {
       let pathIndex = 0; let started = 0
       const drawBalloon = (now: number) => {
         const path = paths[pathIndex]
-        if (!path) { const swayStart = performance.now(); balloonStartedAt.current[index] = swayStart; balloonSwayBlendAt.current[index] = swayStart; activeBalloonDrawings.current = Math.max(0, activeBalloonDrawings.current - 1); if (activeBalloonDrawings.current === 0) { setPen(null); setPenVisible(false); balloonPhase.current[index] = 'idle'; redrawFadeTimer.current = window.setTimeout(() => { redrawActive.current = false; scheduleRedraw.current() }, 140) }; setBalloonDrawn((drawn) => drawn.map((value, i) => i === index ? true : value)); setBalloonBusy((busy) => busy.map((value, i) => i === index ? false : value)); return }
+        if (!path) { const swayStart = performance.now(); balloonStartedAt.current[index] = swayStart; balloonSwayBlendAt.current[index] = swayStart; activeBalloonDrawings.current = Math.max(0, activeBalloonDrawings.current - 1); if (activeBalloonDrawings.current === 0) { setPen(null); setPenVisible(false); balloonPhase.current[index] = 'idle'; balloonBusyRef.current[index] = false; const fadeStarted = now; const releaseAfterFade = (fadeNow: number) => { if (fadeNow - fadeStarted < 140) { redrawFadeTimer.current = requestAnimationFrame(releaseAfterFade); return } redrawFadeTimer.current = undefined; redrawActive.current = false; scheduleRedraw.current() }; redrawFadeTimer.current = requestAnimationFrame(releaseAfterFade) }; setBalloonDrawn((drawn) => drawn.map((value, i) => i === index ? true : value)); setBalloonBusy((busy) => busy.map((value, i) => i === index ? false : value)); return }
         const length = getGeometryLength(path) ?? 1; const progress = Math.min(1, Math.max(0, (now - started) / Math.max(260, length * 3.2)))
         path.style.opacity = '1'; path.style.strokeDashoffset = `${length * (1 - progress)}`
         const point = path.getPointAtLength(length * progress)
@@ -257,12 +261,12 @@ export default function Page() {
         if (progress >= 1) { path.style.strokeDashoffset = '0'; pathIndex += 1; started = now + 18 }
         redrawFrame.current = requestAnimationFrame(drawBalloon)
       }
-      redrawJobs.current.set(index, () => { balloonPhase.current[index] = 'drawing'; redrawActive.current = true; group.style.transform = ''; group.setAttribute('transform', 'translate(0 0)'); paths.forEach((path) => { const length = getGeometryLength(path) ?? 1; path.style.opacity = '0'; path.style.strokeDasharray = `${length}`; path.style.strokeDashoffset = `${length}` }); activeBalloonDrawings.current = 1; setPenVisible(true); redrawFrame.current = requestAnimationFrame((now) => { started = now; drawBalloon(now) }) })
+      redrawJobs.current.set(index, () => { if (!redrawActive.current) return; balloonPhase.current[index] = 'drawing'; group.style.transform = ''; group.setAttribute('transform', 'translate(0 0)'); paths.forEach((path) => { const length = getGeometryLength(path) ?? 1; path.style.opacity = '0'; path.style.strokeDasharray = `${length}`; path.style.strokeDashoffset = `${length}` }); activeBalloonDrawings.current = 1; setPenVisible(true); redrawFrame.current = requestAnimationFrame((now) => { started = now; drawBalloon(now) }) })
       if (!redrawQueue.current.includes(index)) redrawQueue.current.push(index)
       scheduleRedraw.current()
     }
     requestAnimationFrame(animateFlight)
-  }, [balloonBusy, balloonDrawn])
+  }, [])
   useEffect(() => {
     if (!balloonDrawn.some(Boolean)) return
     const animateBalloons = (now: number) => {
