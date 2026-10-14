@@ -35,37 +35,16 @@ const rimArc = ({ cx, cy, rx, ry }: Rim) => `M${cx - rx} ${cy} A${rx} ${ry} 0 0 
 function frostingPath(rim: Rim, count: number, seed: number) {
   let state = seed >>> 0
   const random = () => { state = (state * 1664525 + 1013904223) >>> 0; return state / 4294967296 }
-  const rimY = (x: number) => rim.cy + rim.ry * Math.sqrt(Math.max(0, 1 - ((x - rim.cx) / rim.rx) ** 2))
-  const sampleRim = (from: number, to: number, step = 8) => {
-    const samples = Math.max(1, Math.ceil(Math.abs(to - from) / step)); let commands = ''; let start = from
-    for (let i = 1; i <= samples; i += 1) {
-      const end = from + (to - from) * (i / samples); const span = end - start
-      const c1 = start + span / 3; const c2 = start + (span * 2) / 3
-      commands += ` C${c1.toFixed(1)} ${rimY(c1).toFixed(1)} ${c2.toFixed(1)} ${rimY(c2).toFixed(1)} ${end.toFixed(1)} ${rimY(end).toFixed(1)}`
-      start = end
-    }
-    return commands
-  }
-  const base = 25; const drips: Array<{ x: number; length: number; hw: number }> = []
-  for (let index = 0; index < count; index += 1) {
-    const fraction = (index + 1) / (count + 1); const jitter = (random() - .5) * (1 / (count + 1)) * .3
-    const t = Math.PI * Math.max(.06, Math.min(.94, fraction + jitter)); const hw = 9 + random() * 4; const edgeInset = hw * 2 + 2
-    const x = Math.max(rim.cx - rim.rx + edgeInset, Math.min(rim.cx + rim.rx - edgeInset, rim.cx - rim.rx * Math.cos(t)))
-    let length = base * (.5 + random() * 1.1)
-    if (index > 0 && length > base * 1.35 && drips[index - 1].length > base * 1.35) length = base * 1.1
-    drips.push({ x, length, hw })
-  }
-  let path = `M${(rim.cx - rim.rx).toFixed(1)} ${rimY(rim.cx - rim.rx).toFixed(1)}`; let previous = rim.cx - rim.rx
-  drips.forEach((drip) => {
-    const left = drip.x - 2 * drip.hw; const right = drip.x + 2 * drip.hw; const y = rimY(drip.x); const neck = drip.hw * .55; const neckLeft = drip.x - neck; const neckRight = drip.x + neck; const bottom = y + drip.length; const bulbHalf = drip.hw * .65
-    const approach = Math.max(previous, left - 10); path += sampleRim(previous, approach); path += ` C${(approach + (left - approach) * .55).toFixed(1)} ${rimY(approach).toFixed(1)} ${left.toFixed(1)} ${(rimY(left) + 1).toFixed(1)} ${left.toFixed(1)} ${rimY(left).toFixed(1)}`
-    path += ` C${left.toFixed(1)} ${rimY(left).toFixed(1)} ${neckLeft.toFixed(1)} ${(y + drip.length * .16).toFixed(1)} ${neckLeft.toFixed(1)} ${(y + drip.length * .42).toFixed(1)}`
-    path += ` C${neckLeft.toFixed(1)} ${(bottom - drip.length * .12).toFixed(1)} ${(drip.x - bulbHalf).toFixed(1)} ${bottom.toFixed(1)} ${drip.x.toFixed(1)} ${bottom.toFixed(1)}`
-    path += ` C${(drip.x + bulbHalf).toFixed(1)} ${bottom.toFixed(1)} ${neckRight.toFixed(1)} ${(bottom - drip.length * .12).toFixed(1)} ${neckRight.toFixed(1)} ${(y + drip.length * .42).toFixed(1)}`
-    path += ` C${neckRight.toFixed(1)} ${(y + drip.length * .16).toFixed(1)} ${right.toFixed(1)} ${rimY(right).toFixed(1)} ${right.toFixed(1)} ${rimY(right).toFixed(1)}`
-    previous = right
-  })
-  return path + sampleRim(previous, rim.cx + rim.rx)
+  const arcSamples = Array.from({ length: 129 }, (_, index) => { const t = Math.PI - (Math.PI * index) / 128; return { t, x: rim.cx + rim.rx * Math.cos(t), y: rim.cy + rim.ry * Math.sin(t) } })
+  const arcLengths = [0]; for (let index = 1; index < arcSamples.length; index += 1) { const a = arcSamples[index - 1]; const b = arcSamples[index]; arcLengths.push(arcLengths[index - 1] + Math.hypot(b.x - a.x, b.y - a.y)) }
+  const totalArc = arcLengths[arcLengths.length - 1]
+  const pointAtArc = (distance: number) => { const target = Math.max(0, Math.min(totalArc, distance)); let index = 1; while (index < arcLengths.length && arcLengths[index] < target) index += 1; const a = arcSamples[index - 1]; const b = arcSamples[index]; const span = arcLengths[index] - arcLengths[index - 1] || 1; const mix = (target - arcLengths[index - 1]) / span; return { x: a.x + (b.x - a.x) * mix, y: a.y + (b.y - a.y) * mix } }
+  const curveBetween = (from: number, to: number) => { const steps = Math.max(1, Math.ceil((to - from) / 8)); let command = ''; for (let index = 1; index <= steps; index += 1) { const a = pointAtArc(from + ((to - from) * (index - 1)) / steps); const b = pointAtArc(from + ((to - from) * index) / steps); const c1 = pointAtArc(from + ((to - from) * (index - 2 / 3)) / steps); const c2 = pointAtArc(from + ((to - from) * (index - 1 / 3)) / steps); command += ` C${c1.x.toFixed(1)} ${c1.y.toFixed(1)} ${c2.x.toFixed(1)} ${c2.y.toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}` } return command }
+  const base = 25; const gap = totalArc / (count + 1); const drips: Array<{ distance: number; length: number; hw: number }> = []
+  for (let index = 0; index < count; index += 1) { const distance = gap * (index + 1) + (random() - .5) * gap * .3; let length = base * (.5 + random() * 1.1); if (index > 0 && length > base * 1.35 && drips[index - 1].length > base * 1.35) length = base * 1.1; drips.push({ distance, length, hw: 9 + random() * 4 }) }
+  let path = `M${arcSamples[0].x.toFixed(1)} ${arcSamples[0].y.toFixed(1)}`; let previous = 0
+  drips.forEach((drip) => { const point = pointAtArc(drip.distance); const tangent = { x: -Math.sin(arcSamples.find((sample) => Math.abs(sample.x - point.x) < 2)?.t ?? Math.PI / 2), y: Math.cos(arcSamples.find((sample) => Math.abs(sample.x - point.x) < 2)?.t ?? Math.PI / 2) }; const norm = Math.hypot(tangent.x, tangent.y) || 1; const ux = tangent.x / norm; const uy = tangent.y / norm; const half = drip.hw * 2; const left = pointAtArc(drip.distance - half); const right = pointAtArc(drip.distance + half); const neck = drip.hw * .55; const bottom = point.y + drip.length; const bulbHalf = drip.hw * .7; path += curveBetween(previous, drip.distance - half); path += ` C${left.x.toFixed(1)} ${left.y.toFixed(1)} ${(point.x - ux * neck).toFixed(1)} ${(point.y + drip.length * .25).toFixed(1)} ${(point.x - ux * neck).toFixed(1)} ${(point.y + drip.length * .48).toFixed(1)} C${(point.x - bulbHalf).toFixed(1)} ${(bottom - 2).toFixed(1)} ${(point.x - bulbHalf).toFixed(1)} ${bottom.toFixed(1)} ${point.x.toFixed(1)} ${bottom.toFixed(1)} C${(point.x + bulbHalf).toFixed(1)} ${bottom.toFixed(1)} ${(point.x + bulbHalf).toFixed(1)} ${(bottom - 2).toFixed(1)} ${(point.x + ux * neck).toFixed(1)} ${(point.y + drip.length * .48).toFixed(1)} C${(point.x + ux * neck).toFixed(1)} ${(point.y + drip.length * .25).toFixed(1)} ${right.x.toFixed(1)} ${right.y.toFixed(1)} ${right.x.toFixed(1)} ${right.y.toFixed(1)}`; previous = drip.distance + half })
+  return path + curveBetween(previous, totalArc)
 }
 const upperFrosting = frostingPath(upperRim, 4, 173)
 const middleFrosting = frostingPath(middleRim, 6, 419)
