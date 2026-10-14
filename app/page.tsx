@@ -33,23 +33,34 @@ const upperRim: Rim = { cx: 350, cy: 277, rx: 113, ry: 24 }
 const middleRim: Rim = { cx: 350, cy: 345, rx: 145, ry: 26 }
 const rimArc = ({ cx, cy, rx, ry }: Rim) => `M${cx - rx} ${cy} A${rx} ${ry} 0 0 0 ${cx + rx} ${cy}`
 function frostingPath(rim: Rim, count: number, seed: number) {
-  let state = seed
+  let state = seed >>> 0
   const random = () => { state = (state * 1664525 + 1013904223) >>> 0; return state / 4294967296 }
-  const points = (t: number) => ({ x: rim.cx + rim.rx * Math.cos(Math.PI - Math.PI * t), y: rim.cy + rim.ry * Math.sin(Math.PI - Math.PI * t) })
-  const drips = Array.from({ length: count }, (_, index) => {
-    const spacing = 1 / (count + 1); const jitter = (random() - .5) * spacing * .3
-    const t = Math.max(.06, Math.min(.94, spacing * (index + 1) + jitter)); const length = 15 + random() * 28; const width = 20 + (random() - .5) * 6
-    return { t, length, width }
-  }).sort((a, b) => a.t - b.t)
-  let path = `M${points(0).x} ${points(0).y}`
-  let previousT = 0
+  const rimY = (x: number) => rim.cy + rim.ry * Math.sqrt(Math.max(0, 1 - ((x - rim.cx) / rim.rx) ** 2))
+  const sampleRim = (from: number, to: number, step = 8) => {
+    const samples = Math.max(1, Math.ceil(Math.abs(to - from) / step)); let commands = ''
+    for (let i = 1; i <= samples; i += 1) { const x = from + (to - from) * (i / samples); commands += ` L${x.toFixed(1)} ${rimY(x).toFixed(1)}` }
+    return commands
+  }
+  const base = 25; const spacing = (rim.rx * 2) / (count + 1)
+  const drips: Array<{ x: number; length: number; hw: number }> = []
+  for (let index = 0; index < count; index += 1) {
+    let x = rim.cx - rim.rx + spacing * (index + 1) + (random() - .5) * spacing * .3
+    x = Math.max(rim.cx - rim.rx + 26, Math.min(rim.cx + rim.rx - 26, x))
+    let length = base * (.5 + random() * 1.1)
+    if (index > 0 && length > base * 1.35 && drips[index - 1].length > base * 1.35) length = base * 1.1
+    drips.push({ x, length, hw: 9 + random() * 4 })
+  }
+  let path = `M${(rim.cx - rim.rx).toFixed(1)} ${rimY(rim.cx - rim.rx).toFixed(1)}`; let previous = rim.cx - rim.rx
   drips.forEach((drip) => {
-    const point = points(drip.t); const tangent = { x: Math.sin(Math.PI * drip.t) * rim.rx, y: -Math.cos(Math.PI * drip.t) * rim.ry }; const norm = Math.hypot(tangent.x, tangent.y) || 1; const ux = tangent.x / norm; const uy = tangent.y / norm; const half = drip.width / 2; const left = { x: point.x - ux * half, y: point.y - uy * half }; const right = { x: point.x + ux * half, y: point.y + uy * half }; const bottom = { x: point.x, y: point.y + drip.length }
-    const gap = points(Math.max(previousT, drip.t - .035)); path += ` C${gap.x} ${gap.y} ${left.x} ${left.y} ${left.x} ${left.y} C${left.x} ${left.y + drip.length * .42} ${left.x - ux * 3} ${bottom.y - 3} ${bottom.x} ${bottom.y} C${right.x + ux * 3} ${bottom.y - 3} ${right.x} ${right.y + drip.length * .42} ${right.x} ${right.y} C${right.x} ${right.y} ${points(Math.min(1, drip.t + .035)).x} ${points(Math.min(1, drip.t + .035)).y} ${points(Math.min(1, drip.t + .055)).x} ${points(Math.min(1, drip.t + .055)).y}`
-    previousT = drip.t + .055
+    const left = drip.x - 2 * drip.hw; const right = drip.x + 2 * drip.hw; const y = rimY(drip.x); const neck = drip.hw * .55; const neckLeft = drip.x - neck; const neckRight = drip.x + neck; const bottom = y + drip.length; const bulbHalf = drip.hw * .65
+    path += sampleRim(previous, left)
+    path += ` C${left.toFixed(1)} ${rimY(left).toFixed(1)} ${neckLeft.toFixed(1)} ${(y + drip.length * .22).toFixed(1)} ${neckLeft.toFixed(1)} ${(y + drip.length * .45).toFixed(1)}`
+    path += ` C${neckLeft.toFixed(1)} ${(bottom - drip.length * .08).toFixed(1)} ${(drip.x - bulbHalf).toFixed(1)} ${bottom.toFixed(1)} ${drip.x.toFixed(1)} ${bottom.toFixed(1)}`
+    path += ` C${(drip.x + bulbHalf).toFixed(1)} ${bottom.toFixed(1)} ${neckRight.toFixed(1)} ${(bottom - drip.length * .08).toFixed(1)} ${neckRight.toFixed(1)} ${(y + drip.length * .45).toFixed(1)}`
+    path += ` C${neckRight.toFixed(1)} ${(y + drip.length * .22).toFixed(1)} ${right.toFixed(1)} ${rimY(right).toFixed(1)} ${right.toFixed(1)} ${rimY(right).toFixed(1)}`
+    previous = right
   })
-  const end = points(1); path += ` C${points(Math.min(1, previousT + .12)).x} ${points(Math.min(1, previousT + .12)).y} ${end.x} ${end.y} ${end.x} ${end.y}`
-  return path
+  return path + sampleRim(previous, rim.cx + rim.rx)
 }
 const upperFrosting = frostingPath(upperRim, 4, 173)
 const middleFrosting = frostingPath(middleRim, 5, 419)
