@@ -133,6 +133,7 @@ export default function Page() {
   const redrawActive = useRef(false)
   const redrawFrame = useRef<number | undefined>(undefined)
   const redrawFadeTimer = useRef<number | undefined>(undefined)
+  const redrawFadeStartedAt = useRef(0)
   const balloonPhase = useRef<Array<'idle' | 'floating' | 'waiting' | 'drawing'>>(['idle', 'idle', 'idle', 'idle'])
   const scheduleRedraw = useRef<() => void>(() => {})
   const balloonGeometries = useRef<Geometry[][]>([[], [], [], []])
@@ -143,7 +144,7 @@ export default function Page() {
   const registerBalloonGroup = (element: SVGGElement | null, index: number) => { balloonGroups.current[index] = element; if (element) balloonGeometries.current[index] = Array.from(element.querySelectorAll<Geometry>('[data-stroke]')) }
   const registerBalloonString = (element: Geometry | null, index: number) => { balloonStrings.current[index] = element; register(element) }
   const replay = useCallback(() => {
-    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setPenVisible(true); redrawQueue.current = []; redrawJobs.current.clear(); redrawActive.current = false; if (redrawFrame.current) cancelAnimationFrame(redrawFrame.current); if (redrawFadeTimer.current) window.clearTimeout(redrawFadeTimer.current); balloonPhase.current = ['idle', 'idle', 'idle', 'idle']; setDrawing(true); setStates(groups.map(() => 'pending')); setBalloonDrawn([false, false, false, false]); setBalloonBusy([false, false, false, false]); setBalloonFloating([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]; balloonSwayBlendAt.current = [0, 0, 0, 0]
+    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setPenVisible(true); redrawQueue.current = []; redrawJobs.current.clear(); redrawActive.current = false; if (redrawFrame.current) cancelAnimationFrame(redrawFrame.current); if (redrawFadeTimer.current) cancelAnimationFrame(redrawFadeTimer.current); redrawFadeTimer.current = undefined; balloonPhase.current = ['idle', 'idle', 'idle', 'idle']; setDrawing(true); setStates(groups.map(() => 'pending')); setBalloonDrawn([false, false, false, false]); setBalloonBusy([false, false, false, false]); setBalloonFloating([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]; balloonSwayBlendAt.current = [0, 0, 0, 0]
     const groupOrder = new Map(groups.map((group, index) => [group, index]))
     const ordered = geometries.current
       .filter((element) => getGeometryLength(element) !== null)
@@ -224,10 +225,11 @@ export default function Page() {
     redrawJobs.current.delete(next)
     if (!job) { balloonPhase.current[next] = 'idle'; scheduleRedraw.current(); return }
     redrawActive.current = true
+    if (redrawFrame.current !== undefined) return
     job()
   }
   const clickBalloon = useCallback((index: number) => {
-    if (!balloonDrawn[index] || balloonBusy[index]) return
+    if (!balloonDrawnRef.current[index] || balloonPhase.current[index] !== 'idle') return
     const group = balloonGroups.current[index]; const paths = balloonGeometries.current[index]
     if (!group || !paths.length) return
     const bounds = group.getBoundingClientRect(); const sizeFactor = Math.max(.72, Math.min(1.35, bounds.height / 180)); const drift = (index % 2 === 0 ? 1 : -1) * (12 + Math.random() * 12); const exitDistance = -(bounds.top + bounds.height + 32); const flightDuration = 1500 + sizeFactor * 320 + Math.random() * 220
@@ -248,7 +250,7 @@ export default function Page() {
       let pathIndex = 0; let started = 0
       const drawBalloon = (now: number) => {
         const path = paths[pathIndex]
-        if (!path) { const swayStart = performance.now(); balloonStartedAt.current[index] = swayStart; balloonSwayBlendAt.current[index] = swayStart; activeBalloonDrawings.current = Math.max(0, activeBalloonDrawings.current - 1); if (activeBalloonDrawings.current === 0) { setPen(null); setPenVisible(false); balloonPhase.current[index] = 'idle'; redrawFadeTimer.current = window.setTimeout(() => { redrawActive.current = false; scheduleRedraw.current() }, 140) }; setBalloonDrawn((drawn) => drawn.map((value, i) => i === index ? true : value)); setBalloonBusy((busy) => busy.map((value, i) => i === index ? false : value)); return }
+        if (!path) { const swayStart = performance.now(); balloonStartedAt.current[index] = swayStart; balloonSwayBlendAt.current[index] = swayStart; activeBalloonDrawings.current = Math.max(0, activeBalloonDrawings.current - 1); if (activeBalloonDrawings.current === 0) { setPen(null); setPenVisible(false); balloonPhase.current[index] = 'idle'; redrawFadeStartedAt.current = now; const releaseAfterFade = (fadeNow: number) => { if (fadeNow - redrawFadeStartedAt.current < 140) { redrawFadeTimer.current = requestAnimationFrame(releaseAfterFade); return } redrawActive.current = false; redrawFadeTimer.current = undefined; scheduleRedraw.current() }; redrawFadeTimer.current = requestAnimationFrame(releaseAfterFade) }; setBalloonDrawn((drawn) => drawn.map((value, i) => i === index ? true : value)); setBalloonBusy((busy) => busy.map((value, i) => i === index ? false : value)); return }
         const length = getGeometryLength(path) ?? 1; const progress = Math.min(1, Math.max(0, (now - started) / Math.max(260, length * 3.2)))
         path.style.opacity = '1'; path.style.strokeDashoffset = `${length * (1 - progress)}`
         const point = path.getPointAtLength(length * progress)
@@ -262,7 +264,7 @@ export default function Page() {
       scheduleRedraw.current()
     }
     requestAnimationFrame(animateFlight)
-  }, [balloonBusy, balloonDrawn])
+  }, [])
   useEffect(() => {
     if (!balloonDrawn.some(Boolean)) return
     const animateBalloons = (now: number) => {
@@ -321,7 +323,7 @@ if (!balloonDrawn[index] || balloonPhase.current[index] !== 'idle') return
         <g className={`envelope ${completed ? 'envelope-ready' : ''}`} onClick={() => completed && setOpen(true)} onKeyDown={(event) => { if (completed && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); setOpen(true) } }} role="button" tabIndex={completed ? 0 : -1} aria-disabled={!completed} aria-label="Mở lá thư">{line('envelope', 'M245 535h210v42H245z')}{line('envelope', 'm245 535 105 29 105-29', 'envelope-flap')}{line('envelope', 'M245 577l77-31M455 577l-77-31')}{<circle cx="350" cy="558" r="7" />}<rect className="envelope-hit" x="238" y="528" width="224" height="58" rx="4" /></g>
         {penVisible && pen && <circle className="pen-tip" cx={pen.x} cy={pen.y} r="3" />}
       </svg>
-          {open && <div className="letter" role="dialog" aria-label="Lá thư chúc mừng"><button className="close" onClick={() => setOpen(false)} aria-label="Đóng thư">×</button><p className="letter-kicker">gửi Bảo Ngọc,</p><svg className="handwriting" viewBox="0 0 360 260" role="img" aria-label={message}><text x="180" y="25" textAnchor="middle"><tspan x="180" dy="0">Chúc người bạn thiên tài super cute</tspan><tspan x="180" dy="31">siêu cấp tốt bụng tuổi mới luôn đầy</tspan><tspan x="180" dy="31">năng lượng nhaa, giữ vững phong độ</tspan><tspan x="180" dy="31">và ngủ cười khà khà thật nhiềuuu.</tspan><tspan x="180" dy="31">Hơn hết là nhớ ăn uống thật đầy đủ</tspan><tspan x="180" dy="31">nhaaaaaaaa 💖💖</tspan></text></svg><p className="signature">— người bạn cùng học</p></div>}
+          {open && <div className="letter" role="dialog" aria-label="Lá thư chúc mừng"><button className="close" onClick={() => setOpen(false)} aria-label="Đóng thư">×</button><p className="letter-kicker">gửi Bảo Ngọc,</p><svg className="handwriting" viewBox="0 0 360 260" role="img" aria-label={message}><text x="180" y="25" textAnchor="middle"><tspan x="180" dy="0">Chúc người bạn thiên tài super cute</tspan><tspan x="180" dy="31">siêu cấp tốt bụng tuổi mới luôn đầy</tspan><tspan x="180" dy="31">năng lượng nhaa, giữ vững phong độ</tspan><tspan x="180" dy="31">và ngủ cười khà khà thật nhiềuuu.</tspan><tspan x="180" dy="31">Hơn hết là nhớ ăn uống thật đầy đủ</tspan><tspan x="180" dy="31">nhaaaaaaaa 💖���</tspan></text></svg><p className="signature">— người bạn cùng học</p></div>}
     </section>
     <nav className="controls" aria-label="Điều khiển"><button onClick={replay}>Replay Drawing</button></nav><p className="status" aria-live="polite">{drawing ? 'the pen is still wandering…' : 'all lines are in place'}</p>
   </main>
