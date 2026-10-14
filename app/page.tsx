@@ -212,6 +212,8 @@ export default function Page() {
     if (!balloonDrawn[index] || balloonBusy[index]) return
     const group = balloonGroups.current[index]; const paths = balloonGeometries.current[index]
     if (!group || !paths.length) return
+    const bounds = group.getBoundingClientRect(); const drift = index % 2 === 0 ? 14 : -14; const exitDistance = -(bounds.top + bounds.height + 24)
+    group.style.setProperty('--balloon-drift', `${drift}px`); group.style.setProperty('--balloon-exit-distance', `${exitDistance}px`)
     setBalloonBusy((busy) => busy.map((value, i) => i === index ? true : value)); setBalloonFloating((floating) => floating.map((value, i) => i === index ? true : value))
     window.setTimeout(() => {
       setBalloonFloating((floating) => floating.map((value, i) => i === index ? false : value)); group.setAttribute('transform', 'translate(0 0)')
