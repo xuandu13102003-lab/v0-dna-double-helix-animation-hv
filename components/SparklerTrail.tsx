@@ -77,7 +77,10 @@ export default function SparklerTrail({ enabled }: { enabled: boolean }) {
       context.globalAlpha = 1; context.shadowBlur = 0; frame = requestAnimationFrame(draw)
     }
 
-    const enable = () => { if (enabled) { active = true; resize() } }
+    const enable = () => {
+      active = enabled
+      if (active) resize()
+    }
     const fallback = window.setTimeout(enable, 1800)
     resize(); window.addEventListener('resize', resize); window.addEventListener('pointerdown', press, { passive: false }); window.addEventListener('pointermove', move, { passive: true }); window.addEventListener('pointerup', release); window.addEventListener('pointercancel', release); frame = requestAnimationFrame(draw)
     return () => { window.clearTimeout(fallback); cancelAnimationFrame(frame); window.removeEventListener('resize', resize); window.removeEventListener('pointerdown', press); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', release); window.removeEventListener('pointercancel', release); document.documentElement.classList.remove('sparkler-pressed'); highlighted?.classList.remove('sparkler-near'); sparks.length = 0 }
