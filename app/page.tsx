@@ -212,11 +212,20 @@ export default function Page() {
     if (!balloonDrawn[index] || balloonBusy[index]) return
     const group = balloonGroups.current[index]; const paths = balloonGeometries.current[index]
     if (!group || !paths.length) return
-    const bounds = group.getBoundingClientRect(); const drift = index % 2 === 0 ? 14 : -14; const exitDistance = -(bounds.top + bounds.height + 24)
-    group.style.setProperty('--balloon-drift', `${drift}px`); group.style.setProperty('--balloon-exit-distance', `${exitDistance}px`)
+    const bounds = group.getBoundingClientRect(); const sizeFactor = Math.max(.72, Math.min(1.35, bounds.height / 180)); const drift = (index % 2 === 0 ? 1 : -1) * (12 + Math.random() * 12); const exitDistance = -(bounds.top + bounds.height + 32); const flightDuration = 1500 + sizeFactor * 320 + Math.random() * 220
     setBalloonBusy((busy) => busy.map((value, i) => i === index ? true : value)); setBalloonFloating((floating) => floating.map((value, i) => i === index ? true : value))
-    window.setTimeout(() => {
-      setBalloonFloating((floating) => floating.map((value, i) => i === index ? false : value)); group.setAttribute('transform', 'translate(0 0)')
+    const startedAt = performance.now(); const tugDuration = 150; const startTransform = group.getAttribute('transform') || ''
+    const animateFlight = (now: number) => {
+      const elapsed = now - startedAt
+      if (elapsed < tugDuration) {
+        const tug = Math.sin((elapsed / tugDuration) * Math.PI) * 5
+        group.style.transform = `translate(0px, ${tug}px) scale(1.035, .965)`
+        requestAnimationFrame(animateFlight); return
+      }
+      const progress = Math.min(1, (elapsed - tugDuration) / flightDuration); const eased = progress * progress * (.9 + .1 * progress); const sway = Math.sin(progress * Math.PI * 2.2) * drift; const wobble = Math.sin(progress * Math.PI * 7 + index) * 1.8; const tilt = Math.atan2(exitDistance * .08, drift) * 0.35 + wobble
+      group.style.transform = `translate(${sway}px, ${exitDistance * eased}px) rotate(${tilt}deg)`
+      if (progress < 1) { requestAnimationFrame(animateFlight); return }
+      setBalloonFloating((floating) => floating.map((value, i) => i === index ? false : value)); group.style.transform = ''; group.setAttribute('transform', startTransform)
       paths.forEach((path) => { const length = getGeometryLength(path) ?? 1; path.style.opacity = '0'; path.style.strokeDasharray = `${length}`; path.style.strokeDashoffset = `${length}` })
       let pathIndex = 0; let started = 0
       const drawBalloon = (now: number) => {
@@ -229,7 +238,8 @@ export default function Page() {
         requestAnimationFrame(drawBalloon)
       }
       requestAnimationFrame((now) => { started = now; drawBalloon(now) })
-    }, 1500)
+    }
+    requestAnimationFrame(animateFlight)
   }, [balloonBusy, balloonDrawn])
   useEffect(() => {
     if (!balloonDrawn.some(Boolean)) return
