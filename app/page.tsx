@@ -40,9 +40,23 @@ function frostingPath(rim: Rim, count: number, seed: number) {
   const arcLengths = [0]; for (let index = 1; index < arcSamples.length; index += 1) { const a = arcSamples[index - 1]; const b = arcSamples[index]; arcLengths.push(arcLengths[index - 1] + Math.hypot(b.x - a.x, b.y - a.y)) }
   const totalArc = arcLengths[arcLengths.length - 1]; const pointAtArc = (distance: number) => { const target = Math.max(0, Math.min(totalArc, distance)); let index = 1; while (index < arcLengths.length && arcLengths[index] < target) index += 1; const a = arcSamples[index - 1]; const b = arcSamples[index]; const mix = (target - arcLengths[index - 1]) / (arcLengths[index] - arcLengths[index - 1] || 1); return { x: a.x + (b.x - a.x) * mix, y: a.y + (b.y - a.y) * mix } }
   const base = 2; const spacing = totalArc / (count + 1); const bumps: Array<{ x: number; halfWidth: number; height: number }> = []
-  for (let index = 0; index < count; index += 1) { const center = pointAtArc(spacing * (index + 1) + (random() - .5) * spacing * .2); bumps.push({ x: center.x, halfWidth: 10 + random() * 4, height: 14 + random() * 28 }) }
-  const left = rim.cx - rim.rx; const right = rim.cx + rim.rx; const samples = Math.ceil((right - left) / 1.5); let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)}`
-  for (let index = 1; index <= samples; index += 1) { const x = left + (right - left) * (index / samples); let depth = base; bumps.forEach((bump) => { const normalized = Math.abs(x - bump.x) / bump.halfWidth; if (normalized < 1) { const smooth = 1 - (normalized * normalized * (3 - 2 * normalized)); depth += bump.height * smooth } }); path += ` L${x.toFixed(1)} ${(rimY(x) + depth).toFixed(1)}` }
+  for (let index = 0; index < count; index += 1) {
+    const centerDistance = spacing * (index + 1) + (random() - .5) * spacing * .2
+    const center = pointAtArc(centerDistance)
+    const halfWidth = 12 + random() * 6
+    const height = halfWidth * (.95 + random() * 1.15)
+    bumps.push({ x: center.x, halfWidth, height })
+  }
+  const smoothMax = (a: number, b: number) => { const k = 0.18; const max = Math.max(a, b); return max + Math.log(Math.exp(k * (a - max)) + Math.exp(k * (b - max))) / k }
+  const left = rim.cx - rim.rx; const right = rim.cx + rim.rx; const samples = Math.ceil(right - left); let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)}`
+  for (let index = 1; index <= samples; index += 1) {
+    const x = left + index; let depth = base
+    bumps.forEach((bump) => {
+      const normalized = (x - bump.x) / bump.halfWidth
+      if (Math.abs(normalized) < 1) { const dripDepth = bump.height * Math.sqrt(Math.max(0, 1 - normalized * normalized)); depth = smoothMax(depth, dripDepth) }
+    })
+    path += ` L${x.toFixed(1)} ${(rimY(x) + depth).toFixed(1)}`
+  }
   return path
 }
 const upperFrosting = frostingPath(upperRim, 4, 173)
