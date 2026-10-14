@@ -226,12 +226,12 @@ export default function Page() {
       const progress = Math.min(1, (elapsed - tugDuration) / flightDuration); const eased = progress * progress * (.9 + .1 * progress); const sway = Math.sin(progress * Math.PI * 2.2) * drift; const wobble = Math.sin(progress * Math.PI * 7 + index) * 1.8; const tilt = Math.atan2(exitDistance * .08, drift) * 0.35 + wobble
       group.style.transform = `translate(${sway}px, ${exitDistance * eased}px) rotate(${tilt}deg)`
       if (progress < 1) { requestAnimationFrame(animateFlight); return }
-      setBalloonFloating((floating) => floating.map((value, i) => i === index ? false : value)); group.style.transform = ''; group.setAttribute('transform', startTransform)
+      setBalloonFloating((floating) => floating.map((value, i) => i === index ? false : value)); group.style.transform = ''; group.setAttribute('transform', 'translate(0 0)'); balloonStartedAt.current[index] = 0; balloonSwayBlendAt.current[index] = 0
       paths.forEach((path) => { const length = getGeometryLength(path) ?? 1; path.style.opacity = '0'; path.style.strokeDasharray = `${length}`; path.style.strokeDashoffset = `${length}` })
       let pathIndex = 0; let started = 0
       const drawBalloon = (now: number) => {
         const path = paths[pathIndex]
-        if (!path) { balloonStartedAt.current[index] = now; balloonSwayBlendAt.current[index] = now; activeBalloonDrawings.current = Math.max(0, activeBalloonDrawings.current - 1); if (activeBalloonDrawings.current === 0) { setPen(null); setPenVisible(false) }; setBalloonDrawn((drawn) => drawn.map((value, i) => i === index ? true : value)); setBalloonBusy((busy) => busy.map((value, i) => i === index ? false : value)); return }
+        if (!path) { const swayStart = performance.now(); balloonStartedAt.current[index] = swayStart; balloonSwayBlendAt.current[index] = swayStart; activeBalloonDrawings.current = Math.max(0, activeBalloonDrawings.current - 1); if (activeBalloonDrawings.current === 0) { setPen(null); setPenVisible(false) }; setBalloonDrawn((drawn) => drawn.map((value, i) => i === index ? true : value)); setBalloonBusy((busy) => busy.map((value, i) => i === index ? false : value)); return }
         const length = getGeometryLength(path) ?? 1; const progress = Math.min(1, Math.max(0, (now - started) / Math.max(260, length * 3.2)))
         path.style.opacity = '1'; path.style.strokeDashoffset = `${length * (1 - progress)}`
         const point = path.getPointAtLength(length * progress)
