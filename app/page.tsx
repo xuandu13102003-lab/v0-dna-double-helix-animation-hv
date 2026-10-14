@@ -53,15 +53,18 @@ function ShootingStars() {
         const update = (now: number) => {
           if (cancelled) return
           const progress = Math.min(1, (now - started) / motion.duration)
-          const visibility = progress < .1 ? progress / .1 : progress > .9 ? (1 - progress) / .1 : 1
+          const entrance = Math.min(1, progress / .1)
+          const dotFade = progress <= .68 ? 1 : Math.max(0, 1 - (progress - .68) / .14)
           const x = motion.dx * progress; const y = motion.dy * progress
           history.push({ x, y, time: now })
           while (history.length && now - history[0].time > 260) history.shift()
-          if (dot) { dot.style.opacity = `${Math.max(0, visibility)}`; dot.style.transform = `translate(${x}px, ${y}px)` }
+          if (dot) { dot.style.opacity = `${Math.max(0, entrance * dotFade)}`; dot.style.transform = `translate(${x}px, ${y}px)` }
           trails.forEach((trail, index) => {
             const sample = history[Math.max(0, history.length - 1 - (index + 1) * 3)]
             const age = sample ? now - sample.time : Infinity
-            const alpha = sample ? Math.max(0, visibility * (1 - age / 300) * (1 - index * .18)) : 0
+            const trailFadeStart = .68 + index * .07
+            const trailFade = progress <= trailFadeStart ? 1 : Math.max(0, 1 - (progress - trailFadeStart) / .16)
+            const alpha = sample ? Math.max(0, entrance * trailFade * (1 - age / 300) * (1 - index * .18)) : 0
             trail.style.opacity = `${alpha}`
             trail.style.transform = sample ? `translate(${sample.x}px, ${sample.y}px) rotate(${angle}rad)` : 'translate(0, 0)'
           })
