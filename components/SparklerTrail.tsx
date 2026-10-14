@@ -18,6 +18,7 @@ export default function SparklerTrail({ enabled }: { enabled: boolean }) {
     let pointer: { x: number; y: number } | null = null
     let lastPointer: { x: number; y: number } | null = null
     let highlighted: SVGElement | null = null
+    let pressed = false
 
     const resize = () => {
       const ratio = Math.min(window.devicePixelRatio || 1, 2)
@@ -45,6 +46,7 @@ export default function SparklerTrail({ enabled }: { enabled: boolean }) {
       return nearest
     }
     const move = (event: PointerEvent) => {
+      if (!pressed) return
       pointer = { x: event.clientX, y: event.clientY }
       const line = nearestLine(event.clientX, event.clientY)
       const color = line ? getComputedStyle(line).stroke : '#f8f4ed'
@@ -65,8 +67,10 @@ export default function SparklerTrail({ enabled }: { enabled: boolean }) {
       }
       context.globalAlpha = 1; context.shadowBlur = 0; frame = requestAnimationFrame(draw)
     }
-    resize(); addEventListener('resize', resize); addEventListener('pointermove', move, { passive: true }); frame = requestAnimationFrame(draw)
-    return () => { cancelAnimationFrame(frame); removeEventListener('resize', resize); removeEventListener('pointermove', move); highlighted?.classList.remove('sparkler-near'); sparks.length = 0 }
+    const press = (event: PointerEvent) => { pressed = true; document.documentElement.classList.add('sparkler-pressed'); event.preventDefault(); pointer = { x: event.clientX, y: event.clientY }; lastPointer = pointer }
+    const release = () => { pressed = false; document.documentElement.classList.remove('sparkler-pressed'); lastPointer = null }
+    resize(); addEventListener('resize', resize); addEventListener('pointerdown', press, { passive: false }); addEventListener('pointermove', move, { passive: false }); addEventListener('pointerup', release); addEventListener('pointercancel', release); frame = requestAnimationFrame(draw)
+    return () => { cancelAnimationFrame(frame); removeEventListener('resize', resize); removeEventListener('pointerdown', press); removeEventListener('pointermove', move); removeEventListener('pointerup', release); removeEventListener('pointercancel', release); document.documentElement.classList.remove('sparkler-pressed'); highlighted?.classList.remove('sparkler-near'); sparks.length = 0 }
   }, [enabled])
 
   return <canvas ref={canvasRef} className="sparkler-trail" aria-hidden="true" />
