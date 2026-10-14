@@ -64,9 +64,12 @@ function frostingPath(rim: Rim, count: number, seed: number) {
     path += ` C${controlOne.x.toFixed(1)} ${controlOne.y.toFixed(1)} ${controlTwo.x.toFixed(1)} ${controlTwo.y.toFixed(1)} ${current.x.toFixed(1)} ${current.y.toFixed(1)}`
   }
   const rimPassSamples = Math.ceil((right - left) / 1.5)
+  const rimWaveY = (x: number) => rimY(x) + 1.6 * Math.sin(((x - left) / (right - left)) * Math.PI * 4)
+  let previousRim = { x: right, y: rimWaveY(right) }
   for (let index = 1; index <= rimPassSamples; index += 1) {
-    const x = right - (right - left) * (index / rimPassSamples)
-    path += ` L${x.toFixed(1)} ${rimY(x).toFixed(1)}`
+    const x = right - (right - left) * (index / rimPassSamples); const currentRim = { x, y: rimWaveY(x) }; const beforeRim = { x: Math.min(right, x + 2), y: rimWaveY(Math.min(right, x + 2)) }; const afterRim = { x: Math.max(left, x - 2), y: rimWaveY(Math.max(left, x - 2)) }
+    const controlOne = { x: previousRim.x + (currentRim.x - beforeRim.x) / 6, y: previousRim.y + (currentRim.y - beforeRim.y) / 6 }; const controlTwo = { x: currentRim.x - (afterRim.x - previousRim.x) / 6, y: currentRim.y - (afterRim.y - previousRim.y) / 6 }
+    path += ` C${controlOne.x.toFixed(1)} ${controlOne.y.toFixed(1)} ${controlTwo.x.toFixed(1)} ${controlTwo.y.toFixed(1)} ${currentRim.x.toFixed(1)} ${currentRim.y.toFixed(1)}`; previousRim = currentRim
   }
   return path
 }
