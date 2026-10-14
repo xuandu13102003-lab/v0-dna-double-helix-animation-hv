@@ -50,7 +50,7 @@ function frostingPath(rim: Rim, count: number, seed: number) {
   const smoothMax = (a: number, b: number) => { const k = 0.18; const max = Math.max(a, b); return max + Math.log(Math.exp(k * (a - max)) + Math.exp(k * (b - max))) / k }
   const left = rim.cx - rim.rx; const right = rim.cx + rim.rx; const samples = Math.ceil(right - left); let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)}`
   for (let index = 1; index <= samples; index += 1) {
-    const x = left + index; let depth = base
+    const x = left + index; const progress = index / samples; let depth = base + 3 * Math.sin(progress * Math.PI * 3)
     bumps.forEach((bump) => {
       const normalized = (x - bump.x) / bump.halfWidth
       if (Math.abs(normalized) < 1) { const dripDepth = bump.height * Math.sqrt(Math.max(0, 1 - normalized * normalized)); depth = smoothMax(depth, dripDepth) }
