@@ -47,23 +47,22 @@ function ShootingStars() {
         const dot = element.querySelector<HTMLElement>('.particle-dot')
         const trails = [...element.querySelectorAll<HTMLElement>('.particle-trail')]
         const history: { x: number; y: number; time: number }[] = []
-        const angle = Math.atan2(motion.dy, motion.dx)
         element.style.left = `${motion.x}%`; element.style.top = `${motion.y}%`
         const started = performance.now()
         const update = (now: number) => {
           if (cancelled) return
           const progress = Math.min(1, (now - started) / motion.duration)
-          const visibility = progress < .1 ? progress / .1 : progress > .9 ? (1 - progress) / .1 : 1
+          const eased = progress < .12 ? progress / .12 : progress > .82 ? 1 - (progress - .82) / .18 : 1
           const x = motion.dx * progress; const y = motion.dy * progress
           history.push({ x, y, time: now })
-          while (history.length && now - history[0].time > 260) history.shift()
-          if (dot) { dot.style.opacity = `${Math.max(0, visibility)}`; dot.style.transform = `translate(${x - 1.5}px, ${y - 1.5}px)` }
+          while (history.length && now - history[0].time > 220) history.shift()
+          if (dot) { dot.style.opacity = `${Math.max(0, eased)}`; dot.style.transform = `translate(${x - 1.5}px, ${y - 1.5}px) scale(${.7 + eased * .3})` }
           trails.forEach((trail, index) => {
-            const sample = history[Math.max(0, history.length - 1 - (index + 1) * 3)]
+            const sample = history[Math.max(0, history.length - 1 - (index + 1) * 4)]
             const age = sample ? now - sample.time : Infinity
-            const alpha = sample ? Math.max(0, visibility * (1 - age / 300) * (1 - index * .18)) : 0
+            const alpha = sample ? Math.max(0, eased * (1 - age / 220) * (1 - index / trails.length)) : 0
             trail.style.opacity = `${alpha}`
-            trail.style.transform = sample ? `translate(${sample.x}px, ${sample.y}px) rotate(${angle}rad)` : 'translate(0, 0)'
+            trail.style.transform = sample ? `translate(${sample.x - 1.5}px, ${sample.y - .5}px) rotate(${Math.atan2(motion.dy, motion.dx)}rad)` : 'translate(0, 0)'
           })
           if (progress < 1) frame = requestAnimationFrame(update)
           else { history.length = 0; if (dot) dot.style.opacity = '0'; trails.forEach((trail) => { trail.style.opacity = '0' }); if (!cancelled) launch(element, 1800 + Math.random() * 3600) }
