@@ -50,7 +50,10 @@ export default function SparklerTrail({ enabled }: { enabled: boolean }) {
       const line = nearestLine(pointer.x, pointer.y)
       if (reducedMotion.matches) return
       const color = line ? getComputedStyle(line).stroke : '#f8f4ed'
-      sparks.push({ x: pointer.x, y: pointer.y, born: performance.now(), size: 1 + Math.random() * 1.4, color, dx: (Math.random() - .5) * 20, dy: (Math.random() - .5) * 20 })
+      const born = performance.now()
+      for (let index = 0; index < 3; index += 1) {
+        sparks.push({ x: pointer.x + (Math.random() - .5) * 4, y: pointer.y + (Math.random() - .5) * 4, born, size: 1.5 + Math.random() * 2, color, dx: (Math.random() - .5) * 24, dy: (Math.random() - .5) * 24 })
+      }
     }
     const press = (event: PointerEvent) => { if (!active) return; event.preventDefault(); move(event); document.documentElement.classList.add('sparkler-pressed') }
     const release = () => document.documentElement.classList.remove('sparkler-pressed')
@@ -62,10 +65,12 @@ export default function SparklerTrail({ enabled }: { enabled: boolean }) {
           context.globalAlpha = .5; context.fillStyle = '#f8f4ed'; context.shadowColor = '#f8f4ed'; context.shadowBlur = 5; context.beginPath(); context.arc(pointer.x, pointer.y, 1.5, 0, Math.PI * 2); context.fill()
         } else {
           for (let index = sparks.length - 1; index >= 0; index -= 1) {
-            const spark = sparks[index]; const progress = (now - spark.born) / 800
+            const spark = sparks[index]; const progress = (now - spark.born) / 1800
             if (progress >= 1) { sparks.splice(index, 1); continue }
             const fade = 1 - progress
-            context.globalAlpha = fade * .9; context.fillStyle = spark.color; context.shadowColor = spark.color; context.shadowBlur = 7 * fade; context.beginPath(); context.arc(spark.x + spark.dx * progress, spark.y + spark.dy * progress + 12 * progress * progress, spark.size * fade, 0, Math.PI * 2); context.fill()
+            const x = spark.x + spark.dx * progress; const y = spark.y + spark.dy * progress + 12 * progress * progress; const radius = spark.size * fade
+            context.globalAlpha = fade; context.fillStyle = spark.color; context.shadowColor = spark.color; context.shadowBlur = 14 * fade; context.beginPath(); context.arc(x, y, radius, 0, Math.PI * 2); context.fill()
+            context.globalAlpha = fade * .95; context.fillStyle = '#fffdf8'; context.shadowColor = '#ffffff'; context.shadowBlur = 6 * fade; context.beginPath(); context.arc(x, y, Math.max(.65, radius * .42), 0, Math.PI * 2); context.fill()
           }
         }
       }
