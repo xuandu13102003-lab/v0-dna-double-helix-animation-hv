@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import FlowerScene from '@/components/FlowerScene'
 
 type StrokeState = 'pending' | 'drawing' | 'complete'
 type Geometry = SVGPathElement
@@ -132,7 +133,7 @@ export default function Page() {
     const groupOrder = new Map(groups.map((group, index) => [group, index]))
     const ordered = geometries.current
       .filter((element) => getGeometryLength(element) !== null)
-      .sort((a, b) => (groupOrder.get(a.dataset.group || '') ?? 99) - (groupOrder.get(b.dataset.group || '') ?? 99))
+      .sort((a, b) => (groupOrder.get((a.dataset.group || '') as typeof groups[number]) ?? 99) - (groupOrder.get(b.dataset.group || '') ?? 99))
     const lengths = ordered.map((element) => getGeometryLength(element) ?? 1)
     const gap = 24
     const available = 30000
@@ -225,6 +226,7 @@ export default function Page() {
   }, [completed])
   const line = (group: string, d: string, className = '', children?: ReactNode, ref = register) => <path ref={ref} data-stroke data-group={group} className={className} d={d}>{children}</path>
   return <main className="gift-page">
+    <FlowerScene play={completed} />
     <Fireworks active={states[6] === 'complete'} />
     <header className="intro"><p className="eyebrow">A little line of magic</p><h1>For Bảo Ngọc</h1></header>
     <section className="scene" aria-label="Bức tranh bánh sinh nhật đang đ��ợc vẽ">
