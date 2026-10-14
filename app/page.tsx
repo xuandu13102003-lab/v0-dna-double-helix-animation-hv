@@ -39,7 +39,7 @@ function frostingPath(rim: Rim, count: number, seed: number) {
   const arcSamples = Array.from({ length: 257 }, (_, index) => { const t = Math.PI - (Math.PI * index) / 256; return { x: rim.cx + rim.rx * Math.cos(t), y: rim.cy + rim.ry * Math.sin(t) } })
   const arcLengths = [0]; for (let index = 1; index < arcSamples.length; index += 1) { const a = arcSamples[index - 1]; const b = arcSamples[index]; arcLengths.push(arcLengths[index - 1] + Math.hypot(b.x - a.x, b.y - a.y)) }
   const totalArc = arcLengths[arcLengths.length - 1]; const pointAtArc = (distance: number) => { const target = Math.max(0, Math.min(totalArc, distance)); let index = 1; while (index < arcLengths.length && arcLengths[index] < target) index += 1; const a = arcSamples[index - 1]; const b = arcSamples[index]; const mix = (target - arcLengths[index - 1]) / (arcLengths[index] - arcLengths[index - 1] || 1); return { x: a.x + (b.x - a.x) * mix, y: a.y + (b.y - a.y) * mix } }
-  const base = 2; const spacing = totalArc / (count + 1); const bumps: Array<{ x: number; halfWidth: number; height: number }> = []
+  const base = 14; const spacing = totalArc / (count + 1); const bumps: Array<{ x: number; halfWidth: number; height: number }> = []
   for (let index = 0; index < count; index += 1) {
     const centerDistance = spacing * (index + 1) + (random() - .5) * spacing * .2
     const center = pointAtArc(centerDistance)
