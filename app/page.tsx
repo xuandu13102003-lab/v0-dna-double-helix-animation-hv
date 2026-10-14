@@ -46,11 +46,10 @@ function frostingPath(rim: Rim, count: number, seed: number) {
     }
     return commands
   }
-  const base = 25; const spacing = (rim.rx * 2) / (count + 1)
-  const drips: Array<{ x: number; length: number; hw: number }> = []
+  const base = 25; const drips: Array<{ x: number; length: number; hw: number }> = []
   for (let index = 0; index < count; index += 1) {
-    let x = rim.cx - rim.rx + spacing * (index + 1) + (random() - .5) * spacing * .3
-    x = Math.max(rim.cx - rim.rx + 26, Math.min(rim.cx + rim.rx - 26, x))
+    const fraction = (index + 1) / (count + 1); const jitter = (random() - .5) * (1 / (count + 1)) * .3
+    const t = Math.PI * Math.max(.06, Math.min(.94, fraction + jitter)); const x = rim.cx - rim.rx * Math.cos(t)
     let length = base * (.5 + random() * 1.1)
     if (index > 0 && length > base * 1.35 && drips[index - 1].length > base * 1.35) length = base * 1.1
     drips.push({ x, length, hw: 9 + random() * 4 })
@@ -58,7 +57,7 @@ function frostingPath(rim: Rim, count: number, seed: number) {
   let path = `M${(rim.cx - rim.rx).toFixed(1)} ${rimY(rim.cx - rim.rx).toFixed(1)}`; let previous = rim.cx - rim.rx
   drips.forEach((drip) => {
     const left = drip.x - 2 * drip.hw; const right = drip.x + 2 * drip.hw; const y = rimY(drip.x); const neck = drip.hw * .55; const neckLeft = drip.x - neck; const neckRight = drip.x + neck; const bottom = y + drip.length; const bulbHalf = drip.hw * .65
-    path += sampleRim(previous, left)
+    const approach = Math.max(previous, left - 10); path += sampleRim(previous, approach); path += ` C${(approach + (left - approach) * .55).toFixed(1)} ${rimY(approach).toFixed(1)} ${left.toFixed(1)} ${(rimY(left) + 1).toFixed(1)} ${left.toFixed(1)} ${rimY(left).toFixed(1)}`
     path += ` C${left.toFixed(1)} ${rimY(left).toFixed(1)} ${neckLeft.toFixed(1)} ${(y + drip.length * .16).toFixed(1)} ${neckLeft.toFixed(1)} ${(y + drip.length * .42).toFixed(1)}`
     path += ` C${neckLeft.toFixed(1)} ${(bottom - drip.length * .12).toFixed(1)} ${(drip.x - bulbHalf).toFixed(1)} ${bottom.toFixed(1)} ${drip.x.toFixed(1)} ${bottom.toFixed(1)}`
     path += ` C${(drip.x + bulbHalf).toFixed(1)} ${bottom.toFixed(1)} ${neckRight.toFixed(1)} ${(bottom - drip.length * .12).toFixed(1)} ${neckRight.toFixed(1)} ${(y + drip.length * .42).toFixed(1)}`
@@ -68,7 +67,7 @@ function frostingPath(rim: Rim, count: number, seed: number) {
   return path + sampleRim(previous, rim.cx + rim.rx)
 }
 const upperFrosting = frostingPath(upperRim, 4, 173)
-const middleFrosting = frostingPath(middleRim, 5, 419)
+const middleFrosting = frostingPath(middleRim, 6, 419)
 const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng nhaa, giữ vững phong độ và ngủ cười khà khà thật nhiềuuu. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa 💖💖'
 
 function ShootingStars() {
