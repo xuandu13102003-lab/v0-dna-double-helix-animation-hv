@@ -57,6 +57,11 @@ function frostingPath(rim: Rim, count: number, seed: number) {
     })
     path += ` L${x.toFixed(1)} ${(rimY(x) + depth).toFixed(1)}`
   }
+  const rimPassSamples = Math.ceil((right - left) / 1.5)
+  for (let index = 1; index <= rimPassSamples; index += 1) {
+    const x = right - (right - left) * (index / rimPassSamples)
+    path += ` L${x.toFixed(1)} ${rimY(x).toFixed(1)}`
+  }
   return path
 }
 const upperFrosting = frostingPath(upperRim, 4, 173)
