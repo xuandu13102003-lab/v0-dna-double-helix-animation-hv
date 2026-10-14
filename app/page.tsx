@@ -32,22 +32,27 @@ type Rim = { cx: number; cy: number; rx: number; ry: number }
 const upperRim: Rim = { cx: 350, cy: 277, rx: 113, ry: 24 }
 const middleRim: Rim = { cx: 350, cy: 345, rx: 145, ry: 26 }
 const rimArc = ({ cx, cy, rx, ry }: Rim) => `M${cx - rx} ${cy} A${rx} ${ry} 0 0 0 ${cx + rx} ${cy}`
-function frostingPath(rim: Rim, dripFractions: number[]) {
-  const samples = 48
-  const points = Array.from({ length: samples + 1 }, (_, index) => { const t = Math.PI - (Math.PI * index) / samples; return { x: rim.cx + rim.rx * Math.cos(t), y: rim.cy + rim.ry * Math.sin(t) } })
-  const drips = dripFractions.map((fraction, index) => ({ index: Math.round(fraction * samples), length: [14, 27, 20, 31, 17][index % 5], width: 14 + (index % 3) * 2 })).sort((a, b) => a.index - b.index)
-  const byIndex = new Map(drips.map((drip) => [drip.index, drip]))
-  let path = `M${points[0].x} ${points[0].y}`
-  for (let index = 1; index <= samples; index += 1) {
-    const drip = byIndex.get(index)
-    if (!drip) { path += ` L${points[index].x} ${points[index].y}`; continue }
-    const point = points[index]; const halfWidth = drip.width / 2; const left = { x: point.x - halfWidth, y: point.y }; const right = { x: point.x + halfWidth, y: point.y }; const bottom = point.y + drip.length
-    path += ` C${left.x - 2} ${left.y} ${left.x} ${left.y + 4} ${left.x} ${bottom - 5} C${left.x} ${bottom + 3} ${right.x} ${bottom + 3} ${right.x} ${bottom - 5} C${right.x} ${right.y + 4} ${right.x + 2} ${right.y} ${right.x} ${right.y}`
-  }
+function frostingPath(rim: Rim, count: number, seed: number) {
+  let state = seed
+  const random = () => { state = (state * 1664525 + 1013904223) >>> 0; return state / 4294967296 }
+  const points = (t: number) => ({ x: rim.cx + rim.rx * Math.cos(Math.PI - Math.PI * t), y: rim.cy + rim.ry * Math.sin(Math.PI - Math.PI * t) })
+  const drips = Array.from({ length: count }, (_, index) => {
+    const spacing = 1 / (count + 1); const jitter = (random() - .5) * spacing * .3
+    const t = Math.max(.06, Math.min(.94, spacing * (index + 1) + jitter)); const length = 15 + random() * 28; const width = 20 + (random() - .5) * 6
+    return { t, length, width }
+  }).sort((a, b) => a.t - b.t)
+  let path = `M${points(0).x} ${points(0).y}`
+  let previousT = 0
+  drips.forEach((drip) => {
+    const point = points(drip.t); const tangent = { x: Math.sin(Math.PI * drip.t) * rim.rx, y: -Math.cos(Math.PI * drip.t) * rim.ry }; const norm = Math.hypot(tangent.x, tangent.y) || 1; const ux = tangent.x / norm; const uy = tangent.y / norm; const half = drip.width / 2; const left = { x: point.x - ux * half, y: point.y - uy * half }; const right = { x: point.x + ux * half, y: point.y + uy * half }; const bottom = { x: point.x, y: point.y + drip.length }
+    const gap = points(Math.max(previousT, drip.t - .035)); path += ` C${gap.x} ${gap.y} ${left.x} ${left.y} ${left.x} ${left.y} C${left.x} ${left.y + drip.length * .42} ${left.x - ux * 3} ${bottom.y - 3} ${bottom.x} ${bottom.y} C${right.x + ux * 3} ${bottom.y - 3} ${right.x} ${right.y + drip.length * .42} ${right.x} ${right.y} C${right.x} ${right.y} ${points(Math.min(1, drip.t + .035)).x} ${points(Math.min(1, drip.t + .035)).y} ${points(Math.min(1, drip.t + .055)).x} ${points(Math.min(1, drip.t + .055)).y}`
+    previousT = drip.t + .055
+  })
+  const end = points(1); path += ` C${points(Math.min(1, previousT + .12)).x} ${points(Math.min(1, previousT + .12)).y} ${end.x} ${end.y} ${end.x} ${end.y}`
   return path
 }
-const upperFrosting = frostingPath(upperRim, [.16, .42, .68, .88])
-const middleFrosting = frostingPath(middleRim, [.12, .3, .48, .66, .84])
+const upperFrosting = frostingPath(upperRim, 4, 173)
+const middleFrosting = frostingPath(middleRim, 5, 419)
 const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng nhaa, giữ vững phong độ và ngủ cười khà khà thật nhiềuuu. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa 💖💖'
 
 function ShootingStars() {
