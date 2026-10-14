@@ -50,7 +50,7 @@ function frostingPath(rim: Rim, count: number, seed: number) {
   const smoothMax = (a: number, b: number) => { const softness = 6; const delta = a - b; return (a + b + Math.sqrt(delta * delta + softness * softness) - softness) / 2 }
   const left = rim.cx - rim.rx; const right = rim.cx + rim.rx; const samples = Math.ceil(right - left); let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)}`
   const edgeDepth = (x: number, progress: number) => {
-    const wave = 4.2 * Math.sin(progress * Math.PI * 7) + 1.4 * Math.sin(progress * Math.PI * 14)
+    const wave = 3.2 * Math.sin(progress * Math.PI * 12) + 0.7 * Math.sin(progress * Math.PI * 24)
     let depth = base + wave
     bumps.forEach((bump) => {
       const normalized = (x - bump.x) / bump.halfWidth
@@ -65,7 +65,7 @@ function frostingPath(rim: Rim, count: number, seed: number) {
     path += ` C${controlOne.x.toFixed(1)} ${controlOne.y.toFixed(1)} ${controlTwo.x.toFixed(1)} ${controlTwo.y.toFixed(1)} ${current.x.toFixed(1)} ${current.y.toFixed(1)}`
   }
   const rimPassSamples = Math.ceil((right - left) / 1.5)
-  const rimWaveY = (x: number) => { const progress = (x - left) / (right - left); return rimY(x) + 1.2 * Math.sin(progress * Math.PI * 7) + 0.35 * Math.sin(progress * Math.PI * 14) }
+  const rimWaveY = (x: number) => rimY(x)
   let previousRim = { x: right, y: rimWaveY(right) }
   for (let index = 1; index <= rimPassSamples; index += 1) {
     const x = right - (right - left) * (index / rimPassSamples); const currentRim = { x, y: rimWaveY(x) }; const beforeRim = { x: Math.min(right, x + 2), y: rimWaveY(Math.min(right, x + 2)) }; const afterRim = { x: Math.max(left, x - 2), y: rimWaveY(Math.max(left, x - 2)) }
