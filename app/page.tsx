@@ -47,13 +47,13 @@ function frostingPath(rim: Rim, count: number, seed: number) {
     const height = halfWidth * (.95 + random() * 1.15)
     bumps.push({ x: center.x, halfWidth, height })
   }
-  const smoothMax = (a: number, b: number) => { const k = 0.18; const max = Math.max(a, b); return max + Math.log(Math.exp(k * (a - max)) + Math.exp(k * (b - max))) / k }
+  const smoothMax = (a: number, b: number) => { const softness = 3.5; const delta = a - b; return (a + b + Math.sqrt(delta * delta + softness * softness) - softness) / 2 }
   const left = rim.cx - rim.rx; const right = rim.cx + rim.rx; const samples = Math.ceil(right - left); let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)}`
   const edgeDepth = (x: number, progress: number) => {
     let depth = base + 2.5 * Math.sin(progress * Math.PI * 3) + 1.2 * Math.sin(progress * Math.PI * 7)
     bumps.forEach((bump) => {
       const normalized = (x - bump.x) / bump.halfWidth
-      if (Math.abs(normalized) < 1) { const dripDepth = bump.height * Math.sqrt(Math.max(0, 1 - normalized * normalized)); depth = smoothMax(depth, dripDepth) }
+      if (Math.abs(normalized) < 1) { const profile = Math.sqrt(Math.max(0, 1 - normalized * normalized)); const easedProfile = profile * profile * (3 - 2 * profile); const dripDepth = bump.height * easedProfile; depth = smoothMax(depth, dripDepth) }
     })
     return depth
   }
