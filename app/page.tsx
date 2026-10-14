@@ -128,6 +128,8 @@ export default function Page() {
   const geometries = useRef<Geometry[]>([]); const raf = useRef<number | undefined>(undefined); const balloonRaf = useRef<number | undefined>(undefined); const runId = useRef(0)
   const balloonGroups = useRef<(SVGGElement | null)[]>([])
   const activeBalloonDrawings = useRef(0)
+  const redrawQueue = useRef<(() => void)[]>([])
+  const redrawActive = useRef(false)
   const balloonGeometries = useRef<Geometry[][]>([[], [], [], []])
   const balloonStrings = useRef<(Geometry | null)[]>([])
   const balloonStartedAt = useRef<number[]>([0, 0, 0, 0])
@@ -136,7 +138,7 @@ export default function Page() {
   const registerBalloonGroup = (element: SVGGElement | null, index: number) => { balloonGroups.current[index] = element; if (element) balloonGeometries.current[index] = Array.from(element.querySelectorAll<Geometry>('[data-stroke]')) }
   const registerBalloonString = (element: Geometry | null, index: number) => { balloonStrings.current[index] = element; register(element) }
   const replay = useCallback(() => {
-    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setPenVisible(true); setDrawing(true); setStates(groups.map(() => 'pending')); setBalloonDrawn([false, false, false, false]); setBalloonBusy([false, false, false, false]); setBalloonFloating([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]; balloonSwayBlendAt.current = [0, 0, 0, 0]
+    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setPenVisible(true); redrawQueue.current = []; redrawActive.current = false; setDrawing(true); setStates(groups.map(() => 'pending')); setBalloonDrawn([false, false, false, false]); setBalloonBusy([false, false, false, false]); setBalloonFloating([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]; balloonSwayBlendAt.current = [0, 0, 0, 0]
     const groupOrder = new Map(groups.map((group, index) => [group, index]))
     const ordered = geometries.current
       .filter((element) => getGeometryLength(element) !== null)
@@ -226,12 +228,12 @@ export default function Page() {
       const progress = Math.min(1, (elapsed - tugDuration) / flightDuration); const eased = progress * progress * (.9 + .1 * progress); const sway = Math.sin(progress * Math.PI * 2.2) * drift; const wobble = Math.sin(progress * Math.PI * 7 + index) * 1.8; const tilt = Math.atan2(exitDistance * .08, drift) * 0.35 + wobble
       group.style.transform = `translate(${sway}px, ${exitDistance * eased}px) rotate(${tilt}deg)`
       if (progress < 1) { requestAnimationFrame(animateFlight); return }
-      setBalloonFloating((floating) => floating.map((value, i) => i === index ? false : value)); group.style.transform = ''; group.setAttribute('transform', 'translate(0 0)'); balloonStartedAt.current[index] = 0; balloonSwayBlendAt.current[index] = 0
+      setBalloonFloating((floating) => floating.map((value, i) => i === index ? false : value)); balloonStartedAt.current[index] = 0; balloonSwayBlendAt.current[index] = 0
       paths.forEach((path) => { const length = getGeometryLength(path) ?? 1; path.style.opacity = '0'; path.style.strokeDasharray = `${length}`; path.style.strokeDashoffset = `${length}` })
       let pathIndex = 0; let started = 0
       const drawBalloon = (now: number) => {
         const path = paths[pathIndex]
-        if (!path) { const swayStart = performance.now(); balloonStartedAt.current[index] = swayStart; balloonSwayBlendAt.current[index] = swayStart; activeBalloonDrawings.current = Math.max(0, activeBalloonDrawings.current - 1); if (activeBalloonDrawings.current === 0) { setPen(null); setPenVisible(false) }; setBalloonDrawn((drawn) => drawn.map((value, i) => i === index ? true : value)); setBalloonBusy((busy) => busy.map((value, i) => i === index ? false : value)); return }
+        if (!path) { const swayStart = performance.now(); balloonStartedAt.current[index] = swayStart; balloonSwayBlendAt.current[index] = swayStart; activeBalloonDrawings.current = Math.max(0, activeBalloonDrawings.current - 1); if (activeBalloonDrawings.current === 0) { setPen(null); setPenVisible(false); redrawActive.current = false; window.setTimeout(() => redrawQueue.current.shift()?.(), 140) }; setBalloonDrawn((drawn) => drawn.map((value, i) => i === index ? true : value)); setBalloonBusy((busy) => busy.map((value, i) => i === index ? false : value)); return }
         const length = getGeometryLength(path) ?? 1; const progress = Math.min(1, Math.max(0, (now - started) / Math.max(260, length * 3.2)))
         path.style.opacity = '1'; path.style.strokeDashoffset = `${length * (1 - progress)}`
         const point = path.getPointAtLength(length * progress)
@@ -240,7 +242,9 @@ export default function Page() {
         if (progress >= 1) { path.style.strokeDashoffset = '0'; pathIndex += 1; started = now + 18 }
         requestAnimationFrame(drawBalloon)
       }
-      activeBalloonDrawings.current += 1; setPenVisible(true); requestAnimationFrame((now) => { started = now; drawBalloon(now) })
+      const beginRedraw = () => { redrawActive.current = true; group.style.transform = ''; group.setAttribute('transform', 'translate(0 0)'); paths.forEach((path) => { const length = getGeometryLength(path) ?? 1; path.style.opacity = '0'; path.style.strokeDasharray = `${length}`; path.style.strokeDashoffset = `${length}` }); activeBalloonDrawings.current = 1; setPenVisible(true); requestAnimationFrame((now) => { started = now; drawBalloon(now) }) }
+      redrawQueue.current.push(beginRedraw)
+      if (!redrawActive.current) redrawQueue.current.shift()?.()
     }
     requestAnimationFrame(animateFlight)
   }, [balloonBusy, balloonDrawn])
