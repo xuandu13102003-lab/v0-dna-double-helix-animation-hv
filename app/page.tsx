@@ -30,11 +30,11 @@ const groups = ['plate', 'layers', 'cream', 'candles', 'berries', 'bubbles', 'fi
 
 type Rim = { cx: number; cy: number; rx: number; ry: number }
 const upperRim: Rim = { cx: 350, cy: 277, rx: 113, ry: 24 }
-const middleRim: Rim = { cx: 350, cy: 345, rx: 145, ry: 26 }
-function frostingPath(rim: Rim, dripFractions: number[]) {
+const middleRim: Rim = { cx: 350, cy: 351, rx: 145, ry: 26 }
+function frostingPath(rim: Rim, dripFractions: number[], lengths = [14, 27, 20, 31, 17]) {
   const samples = 48
   const points = Array.from({ length: samples + 1 }, (_, index) => { const t = Math.PI - (Math.PI * index) / samples; return { x: rim.cx + rim.rx * Math.cos(t), y: rim.cy + rim.ry * Math.sin(t) } })
-  const drips = dripFractions.map((fraction, index) => ({ index: Math.round(fraction * samples), length: [14, 27, 20, 31, 17][index % 5], width: 14 + (index % 3) * 2 })).sort((a, b) => a.index - b.index)
+  const drips = dripFractions.map((fraction, index) => ({ index: Math.round(fraction * samples), length: lengths[index % lengths.length], width: 14 + (index % 3) * 2 })).sort((a, b) => a.index - b.index)
   let path = `M${points[0].x} ${points[0].y}`
   drips.forEach((drip) => {
     const point = points[drip.index]; const left = points[Math.max(0, drip.index - 2)]; const right = points[Math.min(samples, drip.index + 2)]
@@ -44,7 +44,7 @@ function frostingPath(rim: Rim, dripFractions: number[]) {
   return path
 }
 const upperFrosting = frostingPath(upperRim, [.16, .42, .68, .88])
-const middleFrosting = frostingPath(middleRim, [.12, .3, .48, .66, .84])
+const middleFrosting = frostingPath(middleRim, [.12, .3, .48, .66, .84], [20, 34, 26, 38, 22])
 const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng nhaa, giữ vững phong độ và ngủ cười khà khà thật nhiềuuu. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa 💖💖'
 
 function ShootingStars() {
