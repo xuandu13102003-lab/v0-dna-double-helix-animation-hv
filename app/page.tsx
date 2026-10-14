@@ -36,12 +36,14 @@ function frostingPath(rim: Rim, dripFractions: number[]) {
   const samples = 48
   const points = Array.from({ length: samples + 1 }, (_, index) => { const t = Math.PI - (Math.PI * index) / samples; return { x: rim.cx + rim.rx * Math.cos(t), y: rim.cy + rim.ry * Math.sin(t) } })
   const drips = dripFractions.map((fraction, index) => ({ index: Math.round(fraction * samples), length: [14, 27, 20, 31, 17][index % 5], width: 14 + (index % 3) * 2 })).sort((a, b) => a.index - b.index)
+  const byIndex = new Map(drips.map((drip) => [drip.index, drip]))
   let path = `M${points[0].x} ${points[0].y}`
-  drips.forEach((drip) => {
-    const point = points[drip.index]; const left = points[Math.max(0, drip.index - 2)]; const right = points[Math.min(samples, drip.index + 2)]
-    path += ` C${left.x} ${left.y} ${point.x - drip.width / 2} ${point.y} ${point.x - drip.width / 2} ${point.y + drip.length - 4} C${point.x - drip.width / 2} ${point.y + drip.length + 5} ${point.x + drip.width / 2} ${point.y + drip.length + 5} ${point.x + drip.width / 2} ${point.y + drip.length - 4} C${point.x + drip.width / 2} ${point.y} ${right.x} ${right.y} ${right.x} ${right.y}`
-  })
-  points.slice(1).forEach((point) => { if (!drips.some((drip) => drip.index === points.indexOf(point))) path += ` L${point.x} ${point.y}` })
+  for (let index = 1; index <= samples; index += 1) {
+    const drip = byIndex.get(index)
+    if (!drip) { path += ` L${points[index].x} ${points[index].y}`; continue }
+    const point = points[index]; const halfWidth = drip.width / 2; const left = { x: point.x - halfWidth, y: point.y }; const right = { x: point.x + halfWidth, y: point.y }; const bottom = point.y + drip.length
+    path += ` C${left.x - 2} ${left.y} ${left.x} ${left.y + 4} ${left.x} ${bottom - 5} C${left.x} ${bottom + 3} ${right.x} ${bottom + 3} ${right.x} ${bottom - 5} C${right.x} ${right.y + 4} ${right.x + 2} ${right.y} ${right.x} ${right.y}`
+  }
   return path
 }
 const upperFrosting = frostingPath(upperRim, [.16, .42, .68, .88])
