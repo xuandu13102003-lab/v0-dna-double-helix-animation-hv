@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { TitleWriting } from '@/components/title-writing'
 
 type StrokeState = 'pending' | 'drawing' | 'complete'
 type Geometry = SVGPathElement
@@ -33,9 +32,6 @@ type Rim = { cx: number; cy: number; rx: number; ry: number }
 const upperRim: Rim = { cx: 350, cy: 277, rx: 113, ry: 24 }
 const middleRim: Rim = { cx: 350, cy: 345, rx: 145, ry: 26 }
 const lowerRim: Rim = { cx: 350, cy: 420, rx: 172, ry: 29 }
-const plateRim: Rim = { cx: 350, cy: 505, rx: 220, ry: 22 }
-// The plate's back arc disappears where it meets the bottom tier's base curve (x ≈ 196.5 / 503.5), not at the tier's straight sides.
-const plateCakeCover: Rim = { cx: 350, cy: 482, rx: 153.5, ry: 0 }
 
   const rimArc = ({ cx, cy, rx, ry }: Rim) => `M${cx - rx} ${cy} A${rx} ${ry} 0 0 0 ${cx + rx} ${cy}`
   const fullTopRimEllipse = ({ cx, cy, rx, ry }: Rim) => `M${(cx - rx).toFixed(1)} ${cy.toFixed(1)} A${rx} ${ry} 0 0 0 ${(cx + rx).toFixed(1)} ${cy.toFixed(1)} A${rx} ${ry} 0 0 0 ${(cx - rx).toFixed(1)} ${cy.toFixed(1)} Z`
@@ -210,7 +206,6 @@ export default function Page() {
   const registerBalloonString = (element: Geometry | null, index: number) => { balloonStrings.current[index] = element; register(element) }
   useEffect(() => { balloonDrawnRef.current = balloonDrawn }, [balloonDrawn])
   useEffect(() => { balloonBusyRef.current = balloonBusy }, [balloonBusy])
-  const [titleRun, setTitleRun] = useState(0)
   const replay = useCallback(() => {
     runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setPenVisible(false); redrawQueue.current = []; redrawJobs.current.clear(); redrawActive.current = false; if (redrawFrame.current) cancelAnimationFrame(redrawFrame.current); if (redrawFadeTimer.current) cancelAnimationFrame(redrawFadeTimer.current); redrawFrame.current = undefined; redrawFadeTimer.current = undefined; balloonPhase.current = ['idle', 'idle', 'idle', 'idle']; setDrawing(true); setStates(groups.map(() => 'pending')); balloonDrawnRef.current = [false, false, false, false]; balloonBusyRef.current = [false, false, false, false]; setBalloonDrawn([false, false, false, false]); setBalloonBusy([false, false, false, false]); setBalloonFloating([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]; balloonSwayBlendAt.current = [0, 0, 0, 0]
     const groupOrder = new Map(groups.map((group, index) => [group, index]))
@@ -373,11 +368,11 @@ if (!balloonDrawn[index] || balloonPhase.current[index] !== 'idle') return
   const line = (group: string, d: string, className = '', children?: ReactNode, ref = register, rim?: string, clipPath?: string) => <path ref={ref} data-stroke data-group={group} data-rim={rim} className={className} d={d} clipPath={clipPath}>{children}</path>
   return <main className="gift-page">
     <Fireworks active={states[6] === 'complete'} />
-    <header className="intro"><p className="eyebrow">A little line of magic</p><h1 aria-label="For Bảo Ngọc"><TitleWriting runKey={titleRun} /></h1></header>
+    <header className="intro"><p className="eyebrow">A little line of magic</p><h1>For Bảo Ngọc</h1></header>
     <section className="scene" aria-label="Bức tranh bánh sinh nhật đang đ��ợc vẽ">
       <ShootingStars />
       <svg ref={drawingRef} className="drawing" viewBox="0 0 700 600" role="img" aria-label="Bức tranh bánh sinh nhật"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><clipPath id="middle-cream-visibility"><rect x="0" y="0" width="237" height="600" /><rect x="463" y="0" width="237" height="600" /><rect x="237" y="345" width="226" height="255" /></clipPath></defs>
-        {line('plate', continuousRimRun(plateRim, plateCakeCover))}
+        {line('plate', 'M130 505c12 25 429 25 440 0')}{line('plate', 'M130 505c40-30 400-30 440 0')}
         {line('layers', 'M178 420v62c38 26 306 26 344 0v-62')}{line('layers', continuousRimRun(lowerRim, middleRim), '', undefined, register, 'lower')}{line('layers', 'M205 345v75c35 24 255 24 290 0v-75')}{line('layers', continuousRimRun(middleRim, upperRim), '', undefined, register, 'middle')}{line('layers', 'M237 277v68c29 21 197 21 226 0v-68')}{line('layers', fullTopRimEllipse(upperRim), '', undefined, register, 'upper')}
         {line('cream', upperFrosting, 'cream-line')}{line('cream', middleFrosting, 'cream-line', undefined, register, 'middle-cream', 'url(#middle-cream-visibility)')}
         {line('berries', 'M275 270c-10-19 5-32 17-15 8-20 27-9 19 11')}{line('berries', 'M394 270c-10-19 5-32 17-15 8-20 27-9 19 11')}{line('berries', 'M298 236c-8-23 15-31 20-11 8-22 29-8 18 12')}
@@ -395,6 +390,6 @@ if (!balloonDrawn[index] || balloonPhase.current[index] !== 'idle') return
       </svg>
           {open && <div className="letter" role="dialog" aria-label="Lá thư chúc mừng"><button className="close" onClick={() => setOpen(false)} aria-label="Đóng thư">×</button><p className="letter-kicker">gửi Bảo Ngọc,</p><svg className="handwriting" viewBox="0 0 360 260" role="img" aria-label={message}><text x="180" y="25" textAnchor="middle"><tspan x="180" dy="0">Chúc người bạn thiên tài super cute</tspan><tspan x="180" dy="31">siêu cấp tốt bụng tuổi mới luôn đầy</tspan><tspan x="180" dy="31">năng lượng nhaa, giữ vững phong độ</tspan><tspan x="180" dy="31">và ngủ cười khà khà thật nhiềuuu.</tspan><tspan x="180" dy="31">Hơn hết là nhớ ăn uống thật đầy đủ</tspan><tspan x="180" dy="31">nhaaaaaaaa 💖💖</tspan></text></svg><p className="signature">— người bạn cùng học</p></div>}
     </section>
-    <nav className="controls" aria-label="Điều khiển"><button onClick={() => { setTitleRun((run) => run + 1); replay() }}>Replay Drawing</button></nav><p className="status" aria-live="polite">{drawing ? 'the pen is still wandering…' : 'all lines are in place'}</p>
+    <nav className="controls" aria-label="Điều khiển"><button onClick={replay}>Replay Drawing</button></nav><p className="status" aria-live="polite">{drawing ? 'the pen is still wandering…' : 'all lines are in place'}</p>
   </main>
 }
