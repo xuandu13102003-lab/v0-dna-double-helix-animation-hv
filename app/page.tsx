@@ -254,6 +254,7 @@ export default function Page() {
       } else {
         setPen({ x: point.x, y: point.y })
       }
+      if (covered) setPen(null)
       if (progress >= 1) {
         element.style.strokeDashoffset = '0'
         const balloonIndex = balloonStrings.current.indexOf(element)
