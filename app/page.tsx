@@ -33,7 +33,7 @@ const upperRim: Rim = { cx: 350, cy: 277, rx: 113, ry: 24 }
 const middleRim: Rim = { cx: 350, cy: 345, rx: 145, ry: 26 }
 const lowerRim: Rim = { cx: 350, cy: 420, rx: 172, ry: 29 }
 const rimArc = ({ cx, cy, rx, ry }: Rim) => `M${cx - rx} ${cy} A${rx} ${ry} 0 0 0 ${cx + rx} ${cy}`
-function frostingPath(rim: Rim, count: number, seed: number) {
+function frostingPath(rim: Rim, count: number, seed: number, softness = 1) {
   let state = seed >>> 0
   const random = () => { state = (state * 1664525 + 1013904223) >>> 0; return state / 4294967296 }
   const rimY = (x: number) => rim.cy + rim.ry * Math.sqrt(Math.max(0, 1 - ((x - rim.cx) / rim.rx) ** 2))
@@ -44,13 +44,13 @@ function frostingPath(rim: Rim, count: number, seed: number) {
   const waves: Array<{ center: number; period: number; depth: number; phase: number }> = []
   for (let index = 0; index < count; index += 1) {
     const center = spacing * (index + 1) + (random() - .5) * spacing * .2
-    waves.push({ center, period: spacing * (1.05 + random() * .22), depth: 6 + random() * 7, phase: (random() - .5) * .05 })
+    waves.push({ center, period: spacing * (1.05 + random() * .22) / softness, depth: (6 + random() * 7) * softness, phase: (random() - .5) * .05 * softness })
   }
   const samples = Math.ceil(right - left); const edgeGap = 16; let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)} L${left.toFixed(1)} ${(rimY(left) + edgeGap).toFixed(1)}`
   for (let index = 1; index <= samples; index += 1) {
     const x = left + index; const distance = (x - left) / (right - left)
     const waveIndex = Math.min(waves.length - 1, Math.floor(distance * waves.length)); const wave = waves[waveIndex]; const local = distance * waves.length - waveIndex + wave.phase; const smoothS = 0.5 - 0.5 * Math.cos(2 * Math.PI * local)
-    const irregularity = 1 + 0.12 * Math.sin(distance * Math.PI * 11 + wave.phase * 9) + 0.08 * Math.sin(distance * Math.PI * 17 + wave.depth)
+    const irregularity = 1 + 0.07 * Math.sin(distance * Math.PI * 11 + wave.phase * 9) + 0.04 * Math.sin(distance * Math.PI * 17 + wave.depth)
     const depth = wave.depth * smoothS * irregularity
     path += ` Q${(x - 0.5).toFixed(1)} ${(rimY(x - 0.5) + edgeGap + depth).toFixed(1)} ${x.toFixed(1)} ${(rimY(x) + edgeGap + depth).toFixed(1)}`
   }
@@ -60,8 +60,8 @@ function frostingPath(rim: Rim, count: number, seed: number) {
   }
   return path
 }
-const upperFrosting = frostingPath(upperRim, 4, 173)
-const middleFrosting = frostingPath(middleRim, 6, 419)
+const upperFrosting = frostingPath(upperRim, 4, 173, 0.72)
+const middleFrosting = frostingPath(middleRim, 6, 419, 1)
 const lowerFrosting = frostingPath(lowerRim, 7, 733)
 const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng nhaa, giữ vững phong độ và ngủ cười khà khà thật nhiềuuu. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa 💖💖'
 
