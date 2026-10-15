@@ -43,7 +43,7 @@ function frostingPath(rim: Rim, count: number, seed: number) {
   const waves: Array<{ center: number; period: number; depth: number; phase: number }> = []
   for (let index = 0; index < count; index += 1) {
     const center = spacing * (index + 1) + (random() - .5) * spacing * .2
-    waves.push({ center, period: spacing * (.85 + random() * .3), depth: 12 + random() * 22, phase: (random() - .5) * .12 })
+    waves.push({ center, period: spacing * (.95 + random() * .2), depth: 8 + random() * 10, phase: (random() - .5) * .08 })
   }
   const samples = Math.ceil(right - left); const edgeGap = 16; let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)} L${left.toFixed(1)} ${(rimY(left) + edgeGap).toFixed(1)}`
   for (let index = 1; index <= samples; index += 1) {
