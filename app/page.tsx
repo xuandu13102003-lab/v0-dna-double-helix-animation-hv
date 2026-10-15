@@ -45,14 +45,13 @@ function frostingPath(rim: Rim, count: number, seed: number) {
     const center = spacing * (index + 1) + (random() - .5) * spacing * .2
     waves.push({ center, period: spacing * (.85 + random() * .3), depth: 12 + random() * 22, phase: (random() - .5) * .12 })
   }
-  const samples = Math.ceil(right - left); const edgeGap = 12; let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)} L${left.toFixed(1)} ${(rimY(left) + edgeGap).toFixed(1)}`
+  const samples = Math.ceil(right - left); const edgeGap = 7; let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)} L${left.toFixed(1)} ${(rimY(left) + edgeGap).toFixed(1)}`
   for (let index = 1; index <= samples; index += 1) {
     const x = left + index; const distance = (x - left) / (right - left)
     const waveIndex = Math.min(waves.length - 1, Math.floor(distance * waves.length)); const wave = waves[waveIndex]; const local = distance * waves.length - waveIndex + wave.phase; const smoothS = 0.5 - 0.5 * Math.cos(2 * Math.PI * local)
     const neighboring = waves.reduce((sum, item) => sum + item.depth, 0) / Math.max(1, waves.length)
-    const irregularity = 1 + 0.2 * Math.sin(distance * Math.PI * 9 + wave.phase * 13) + 0.13 * Math.sin(distance * Math.PI * 19 + wave.depth * 0.7) + 0.07 * Math.sin(distance * Math.PI * 31 + wave.period)
-    const edgeEnvelope = Math.pow(Math.sin(Math.PI * distance), 0.72)
-    const depth = (8 + neighboring * 0.28 + (wave.depth * 0.58 + neighboring * 0.16) * smoothS) * irregularity * edgeEnvelope
+    const irregularity = 1 + 0.12 * Math.sin(distance * Math.PI * 11 + wave.phase * 9) + 0.08 * Math.sin(distance * Math.PI * 17 + wave.depth)
+    const depth = (8 + neighboring * 0.28 + (wave.depth * 0.58 + neighboring * 0.16) * smoothS) * irregularity * Math.sin(Math.PI * distance)
     path += ` L${x.toFixed(1)} ${(rimY(x) + edgeGap + depth).toFixed(1)}`
   }
   path += ` L${right.toFixed(1)} ${(rimY(right) + edgeGap).toFixed(1)} L${right.toFixed(1)} ${rimY(right).toFixed(1)}`
