@@ -74,14 +74,12 @@ function frostingPath(rim: Rim, count: number, seed: number, softness = 1, cover
     const depth = Math.min(depthLimit, wave.depth * smoothS * irregularity)
     path += ` Q${(x - 0.5).toFixed(1)} ${(rimY(x - 0.5) + edgeGap + depth).toFixed(1)} ${x.toFixed(1)} ${(rimY(x) + edgeGap + depth).toFixed(1)}`
   }
-  const backEnd = cover ? cover.cx + cover.rx : left
   const backY = (x: number) => rim.cy - rim.ry * Math.sqrt(Math.max(0, 1 - ((x - rim.cx) / rim.rx) ** 2))
-  path += ` L${right.toFixed(1)} ${(rimY(right) + edgeGap).toFixed(1)} L${right.toFixed(1)} ${backY(right).toFixed(1)}`
-  const backSamples = Math.max(1, Math.ceil((right - backEnd) / 1))
+  path += ` L${right.toFixed(1)} ${rimY(right).toFixed(1)} A${rim.rx} ${rim.ry} 0 0 0 ${left.toFixed(1)} ${rim.cy.toFixed(1)}`
+  const backStart = left; const backEnd = right; const backSamples = Math.max(1, Math.ceil((backEnd - backStart) / 1))
   for (let index = 1; index <= backSamples; index += 1) {
-    const x = right - (right - backEnd) * (index / backSamples); path += ` L${x.toFixed(1)} ${backY(x).toFixed(1)}`
+    const x = backStart + (backEnd - backStart) * (index / backSamples); path += ` L${x.toFixed(1)} ${backY(x).toFixed(1)}`
   }
-  path += ` A${rim.rx} ${rim.ry} 0 0 0 ${right.toFixed(1)} ${rim.cy.toFixed(1)}`
   return path
 }
 const upperFrosting = frostingPath(upperRim, 4, 173, 0.84)
