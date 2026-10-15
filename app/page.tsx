@@ -125,7 +125,7 @@ function ShootingStars() {
   }, [])
 
   return <div className="shooting-stars" aria-hidden="true">
-    {['particle-one', 'particle-two', 'particle-three', 'particle-four'].map((className, index) => <span key={className} ref={(element) => { particles.current[index] = element }} className={`shooting-particle ${className}`}><span className="particle-trail" /><span className="particle-trail" /><span className="particle-trail" /><span className="particle-dot" /></span>)}
+    <span ref={(element) => { particles.current[0] = element }} className="shooting-particle particle-one"><span className="particle-trail" /><span className="particle-trail" /><span className="particle-trail" /><span className="particle-dot" /></span>
   </div>
 }
 
