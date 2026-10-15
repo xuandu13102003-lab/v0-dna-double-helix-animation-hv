@@ -74,7 +74,7 @@ function frostingPath(rim: Rim, count: number, seed: number, softness = 1, cover
     const depth = Math.min(depthLimit, wave.depth * smoothS * irregularity)
     path += ` Q${(x - 0.5).toFixed(1)} ${(rimY(x - 0.5) + edgeGap + depth).toFixed(1)} ${x.toFixed(1)} ${(rimY(x) + edgeGap + depth).toFixed(1)}`
   }
-  const backEnd = cover ? cover.cx + cover.rx : left
+  const backEnd = left
   const backY = (x: number) => rim.cy - rim.ry * Math.sqrt(Math.max(0, 1 - ((x - rim.cx) / rim.rx) ** 2))
   path += ` L${right.toFixed(1)} ${(rimY(right) + edgeGap).toFixed(1)} L${right.toFixed(1)} ${backY(right).toFixed(1)}`
   const backSamples = Math.max(1, Math.ceil((right - backEnd) / 1))
@@ -365,16 +365,16 @@ if (!balloonDrawn[index] || balloonPhase.current[index] !== 'idle') return
     balloonRaf.current = requestAnimationFrame(animateBalloons)
     return () => { if (balloonRaf.current) cancelAnimationFrame(balloonRaf.current) }
   }, [balloonDrawn, balloonBusy.length])
-  const line = (group: string, d: string, className = '', children?: ReactNode, ref = register, rim?: string) => <path ref={ref} data-stroke data-group={group} data-rim={rim} className={className} d={d}>{children}</path>
+  const line = (group: string, d: string, className = '', children?: ReactNode, ref = register, rim?: string, clipPath?: string) => <path ref={ref} data-stroke data-group={group} data-rim={rim} className={className} d={d} clipPath={clipPath}>{children}</path>
   return <main className="gift-page">
     <Fireworks active={states[6] === 'complete'} />
     <header className="intro"><p className="eyebrow">A little line of magic</p><h1>For Bảo Ngọc</h1></header>
     <section className="scene" aria-label="Bức tranh bánh sinh nhật đang đ��ợc vẽ">
       <ShootingStars />
-      <svg ref={drawingRef} className="drawing" viewBox="0 0 700 600" role="img" aria-label="Bức tranh bánh sinh nhật"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
+      <svg ref={drawingRef} className="drawing" viewBox="0 0 700 600" role="img" aria-label="Bức tranh bánh sinh nhật"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><clipPath id="middle-cream-visibility"><path d="M0 0H700V600H0Z M205 0H495V420H205Z" clipRule="evenodd" /></clipPath></defs>
         {line('plate', 'M130 505c12 25 429 25 440 0')}{line('plate', 'M130 505c40-30 400-30 440 0')}
         {line('layers', 'M178 420v62c38 26 306 26 344 0v-62')}{line('layers', continuousRimRun(lowerRim, middleRim), '', undefined, register, 'lower')}{line('layers', 'M205 345v75c35 24 255 24 290 0v-75')}{line('layers', continuousRimRun(middleRim, upperRim), '', undefined, register, 'middle')}{line('layers', 'M237 277v68c29 21 197 21 226 0v-68')}{line('layers', fullTopRimEllipse(upperRim), '', undefined, register, 'upper')}
-        {line('cream', upperFrosting, 'cream-line')}{line('cream', middleFrosting, 'cream-line')}
+        {line('cream', upperFrosting, 'cream-line')}{line('cream', middleFrosting, 'cream-line', undefined, register, 'middle-cream', 'url(#middle-cream-visibility)')}
         {line('berries', 'M275 270c-10-19 5-32 17-15 8-20 27-9 19 11')}{line('berries', 'M394 270c-10-19 5-32 17-15 8-20 27-9 19 11')}{line('berries', 'M298 236c-8-23 15-31 20-11 8-22 29-8 18 12')}
         {line('candles', 'M276 277V225M289 277V225M276 225h13M274 267c5 5 10 5 16 0', 'candle-blue')}{line('candles', 'M282.5 225v-9', 'wick')}
         {line('candles', 'M282.5 216c-7-10-1-19 5-27 3 9 11 14 7 23-2 5-7 8-12 4Z', 'flame flame-one', <animate attributeName="d" dur="1.35s" repeatCount="indefinite" values="M282.5 216c-7-10-1-19 5-27 3 9 11 14 7 23-2 5-7 8-12 4Z;M282.5 216c-2-13 6-18 10-28 7 10 6 18 1 25-3 5-7 6-11 3Z;M282.5 216c-8-8-5-18 3-27 1 10 10 13 8 22-1 5-6 8-11 5Z;M282.5 216c-7-10-1-19 5-27 3 9 11 14 7 23-2 5-7 8-12 4Z" />)}
