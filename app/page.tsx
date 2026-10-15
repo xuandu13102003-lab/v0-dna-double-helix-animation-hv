@@ -33,7 +33,6 @@ const upperRim: Rim = { cx: 350, cy: 277, rx: 113, ry: 24 }
 const middleRim: Rim = { cx: 350, cy: 345, rx: 145, ry: 26 }
 const lowerRim: Rim = { cx: 350, cy: 420, rx: 172, ry: 29 }
 
-  const fullRimEllipse = ({ cx, cy, rx, ry }: Rim) => `M${cx - rx} ${cy} A${rx} ${ry} 0 1 0 ${cx + rx} ${cy} A${rx} ${ry} 0 1 0 ${cx - rx} ${cy} Z`
   const rimArc = ({ cx, cy, rx, ry }: Rim) => `M${cx - rx} ${cy} A${rx} ${ry} 0 0 0 ${cx + rx} ${cy}`
   const backRimArc = ({ cx, cy, rx, ry }: Rim, visibleFrom = cx - rx, visibleTo = cx + rx) => {
     const start = Math.max(cx - rx, visibleFrom); const end = Math.min(cx + rx, visibleTo); const y = (x: number) => cy - ry * Math.sqrt(Math.max(0, 1 - ((x - cx) / rx) ** 2)); const samples = Math.max(2, Math.ceil((end - start) / 3)); let path = `M${start.toFixed(1)} ${y(start).toFixed(1)}`
@@ -227,9 +226,6 @@ export default function Page() {
       element.style.opacity = '1'
       element.style.strokeDashoffset = `${length * (1 - progress)}`
       const point = element.getPointAtLength(length * progress)
-      const rimName = element.dataset.rim
-      const covered = (rimName === 'lower' && point.x > 205 && point.x < 495 && point.y < 420) || (rimName === 'middle' && point.x > 237 && point.x < 463 && point.y < 345)
-      setPenVisible(progress > 0 && !covered)
       const svg = drawingRef.current
       const elementMatrix = element.getScreenCTM()
       const svgMatrix = svg?.getScreenCTM()
@@ -351,15 +347,15 @@ if (!balloonDrawn[index] || balloonPhase.current[index] !== 'idle') return
     balloonRaf.current = requestAnimationFrame(animateBalloons)
     return () => { if (balloonRaf.current) cancelAnimationFrame(balloonRaf.current) }
   }, [balloonDrawn, balloonBusy.length])
-  const line = (group: string, d: string, className = '', children?: ReactNode, ref = register, clipPath?: string, rim?: string) => <path ref={ref} data-stroke data-group={group} data-rim={rim} className={className} d={d} clipPath={clipPath}>{children}</path>
+  const line = (group: string, d: string, className = '', children?: ReactNode, ref = register) => <path ref={ref} data-stroke data-group={group} className={className} d={d}>{children}</path>
   return <main className="gift-page">
     <Fireworks active={states[6] === 'complete'} />
     <header className="intro"><p className="eyebrow">A little line of magic</p><h1>For Bảo Ngọc</h1></header>
     <section className="scene" aria-label="Bức tranh bánh sinh nhật đang đ��ợc vẽ">
       <ShootingStars />
-      <svg ref={drawingRef} className="drawing" viewBox="0 0 700 600" role="img" aria-label="Bức tranh bánh sinh nhật"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><clipPath id="lower-rim-visibility"><path d="M0 0H700V600H0Z M205 0H495V420H205Z" clipRule="evenodd" /></clipPath><clipPath id="middle-rim-visibility"><path d="M0 0H700V600H0Z M237 0H463V345H237Z" clipRule="evenodd" /></clipPath></defs>
+      <svg ref={drawingRef} className="drawing" viewBox="0 0 700 600" role="img" aria-label="Bức tranh bánh sinh nhật"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
         {line('plate', 'M130 505c12 25 429 25 440 0')}{line('plate', 'M130 505c40-30 400-30 440 0')}
-        {line('layers', 'M178 420v62c38 26 306 26 344 0v-62')}{line('layers', 'M178 420c24 29 320 29 344 0')}{line('layers', 'M205 345v75c35 24 255 24 290 0v-75')}{line('layers', 'M237 277v68c29 21 197 21 226 0v-68')}{line('layers', fullRimEllipse(lowerRim), '', undefined, register, 'url(#lower-rim-visibility)', 'lower')}{line('layers', fullRimEllipse(middleRim), '', undefined, register, 'url(#middle-rim-visibility)', 'middle')}{line('layers', fullRimEllipse(upperRim), '', undefined, register, undefined, 'upper')}
+        {line('layers', 'M178 420v62c38 26 306 26 344 0v-62')}{line('layers', sideBackRims(lowerRim, middleRim))}{line('layers', 'M178 420c24 29 320 29 344 0')}{line('layers', 'M205 345v75c35 24 255 24 290 0v-75')}{line('layers', sideBackRims(middleRim, upperRim))}{line('layers', rimArc(middleRim))}{line('layers', 'M237 277v68c29 21 197 21 226 0v-68')}{line('layers', backRimArc(upperRim))}{line('layers', rimArc(upperRim))}
         {line('cream', upperFrosting, 'cream-line')}{line('cream', middleFrosting, 'cream-line')}
         {line('berries', 'M275 270c-10-19 5-32 17-15 8-20 27-9 19 11')}{line('berries', 'M394 270c-10-19 5-32 17-15 8-20 27-9 19 11')}{line('berries', 'M298 236c-8-23 15-31 20-11 8-22 29-8 18 12')}
         {line('candles', 'M276 277V225M289 277V225M276 225h13M274 267c5 5 10 5 16 0', 'candle-blue')}{line('candles', 'M282.5 225v-9', 'wick')}
