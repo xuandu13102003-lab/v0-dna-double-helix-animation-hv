@@ -34,7 +34,6 @@ const middleRim: Rim = { cx: 350, cy: 345, rx: 145, ry: 26 }
 const lowerRim: Rim = { cx: 350, cy: 420, rx: 172, ry: 29 }
 
   const rimArc = ({ cx, cy, rx, ry }: Rim) => `M${cx - rx} ${cy} A${rx} ${ry} 0 0 0 ${cx + rx} ${cy}`
-  const continuousRim = ({ cx, cy, rx, ry }: Rim) => `M${cx - rx} ${cy} A${rx} ${ry} 0 0 0 ${cx + rx} ${cy} A${rx} ${ry} 0 0 0 ${cx - rx} ${cy}`
   const backRimArc = ({ cx, cy, rx, ry }: Rim, visibleFrom = cx - rx, visibleTo = cx + rx) => {
     const start = Math.max(cx - rx, visibleFrom); const end = Math.min(cx + rx, visibleTo); const y = (x: number) => cy - ry * Math.sqrt(Math.max(0, 1 - ((x - cx) / rx) ** 2)); const samples = Math.max(2, Math.ceil((end - start) / 3)); let path = `M${start.toFixed(1)} ${y(start).toFixed(1)}`
     for (let index = 1; index <= samples; index += 1) { const x = start + (end - start) * index / samples; path += ` L${x.toFixed(1)} ${y(x).toFixed(1)}` }
@@ -126,7 +125,7 @@ function ShootingStars() {
   }, [])
 
   return <div className="shooting-stars" aria-hidden="true">
-    {['particle-one', 'particle-two', 'particle-three', 'particle-four'].map((className, index) => <span key={className} ref={(element) => { particles.current[index] = element }} className={`shooting-particle ${className}`}><span className="particle-trail" /><span className="particle-trail" /><span className="particle-trail" /><span className="particle-dot" /></span>)}
+    <span ref={(element) => { particles.current[0] = element }} className="shooting-particle particle-one"><span className="particle-trail" /><span className="particle-trail" /><span className="particle-trail" /><span className="particle-dot" /></span>
   </div>
 }
 
@@ -169,7 +168,7 @@ export default function Page() {
   const [balloonDrawn, setBalloonDrawn] = useState<boolean[]>([false, false, false, false])
   const [balloonBusy, setBalloonBusy] = useState<boolean[]>([false, false, false, false])
   const [balloonFloating, setBalloonFloating] = useState<boolean[]>([false, false, false, false])
-  const [open, setOpen] = useState(false); const [drawing, setDrawing] = useState(true); const [pen, setPen] = useState<{ x: number; y: number } | null>(null); const [penVisible, setPenVisible] = useState(true)
+  const [open, setOpen] = useState(false); const [drawing, setDrawing] = useState(true); const [pen, setPen] = useState<{ x: number; y: number } | null>(null); const [penVisible, setPenVisible] = useState(false)
   const drawingRef = useRef<SVGSVGElement | null>(null)
   const geometries = useRef<Geometry[]>([]); const raf = useRef<number | undefined>(undefined); const balloonRaf = useRef<number | undefined>(undefined); const runId = useRef(0)
   const balloonGroups = useRef<(SVGGElement | null)[]>([])
@@ -193,7 +192,7 @@ export default function Page() {
   useEffect(() => { balloonDrawnRef.current = balloonDrawn }, [balloonDrawn])
   useEffect(() => { balloonBusyRef.current = balloonBusy }, [balloonBusy])
   const replay = useCallback(() => {
-    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setPenVisible(true); redrawQueue.current = []; redrawJobs.current.clear(); redrawActive.current = false; if (redrawFrame.current) cancelAnimationFrame(redrawFrame.current); if (redrawFadeTimer.current) cancelAnimationFrame(redrawFadeTimer.current); redrawFrame.current = undefined; redrawFadeTimer.current = undefined; balloonPhase.current = ['idle', 'idle', 'idle', 'idle']; setDrawing(true); setStates(groups.map(() => 'pending')); balloonDrawnRef.current = [false, false, false, false]; balloonBusyRef.current = [false, false, false, false]; setBalloonDrawn([false, false, false, false]); setBalloonBusy([false, false, false, false]); setBalloonFloating([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]; balloonSwayBlendAt.current = [0, 0, 0, 0]
+    runId.current += 1; const id = runId.current; if (raf.current) cancelAnimationFrame(raf.current); setOpen(false); setPen(null); setPenVisible(false); redrawQueue.current = []; redrawJobs.current.clear(); redrawActive.current = false; if (redrawFrame.current) cancelAnimationFrame(redrawFrame.current); if (redrawFadeTimer.current) cancelAnimationFrame(redrawFadeTimer.current); redrawFrame.current = undefined; redrawFadeTimer.current = undefined; balloonPhase.current = ['idle', 'idle', 'idle', 'idle']; setDrawing(true); setStates(groups.map(() => 'pending')); balloonDrawnRef.current = [false, false, false, false]; balloonBusyRef.current = [false, false, false, false]; setBalloonDrawn([false, false, false, false]); setBalloonBusy([false, false, false, false]); setBalloonFloating([false, false, false, false]); balloonStartedAt.current = [0, 0, 0, 0]; balloonSwayBlendAt.current = [0, 0, 0, 0]
     const groupOrder = new Map(groups.map((group, index) => [group, index]))
     const ordered = geometries.current
       .filter((element) => getGeometryLength(element) !== null)
@@ -224,7 +223,9 @@ export default function Page() {
       const length = lengths[index]
       const duration = Math.max(minimumStrokeDuration, length / pixelsPerMillisecond)
       const progress = Math.min(1, Math.max(0, (now - started) / duration))
-      element.style.opacity = '1'
+      const reachedPath = progress > 0
+      setPenVisible(reachedPath)
+      element.style.opacity = reachedPath ? '1' : '0'
       element.style.strokeDashoffset = `${length * (1 - progress)}`
       const point = element.getPointAtLength(length * progress)
       const svg = drawingRef.current
@@ -277,7 +278,8 @@ export default function Page() {
     job()
   }
   const clickBalloon = useCallback((index: number) => {
-    if (!balloonDrawnRef.current[index] || balloonBusyRef.current[index] || balloonPhase.current[index] !== 'idle') return
+  if (balloonDrawnRef.current[index]) return
+  if (balloonBusyRef.current[index] || balloonPhase.current[index] !== 'idle') return
     const group = balloonGroups.current[index]; const paths = balloonGeometries.current[index]
     if (!group || !paths.length) return
     const bounds = group.getBoundingClientRect(); const sizeFactor = Math.max(.72, Math.min(1.35, bounds.height / 180)); const drift = (index % 2 === 0 ? 1 : -1) * (12 + Math.random() * 12); const exitDistance = -(bounds.top + bounds.height + 32); const flightDuration = 1500 + sizeFactor * 320 + Math.random() * 220
@@ -356,7 +358,7 @@ if (!balloonDrawn[index] || balloonPhase.current[index] !== 'idle') return
       <ShootingStars />
       <svg ref={drawingRef} className="drawing" viewBox="0 0 700 600" role="img" aria-label="Bức tranh bánh sinh nhật"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
         {line('plate', 'M130 505c12 25 429 25 440 0')}{line('plate', 'M130 505c40-30 400-30 440 0')}
-        {line('layers', 'M178 420v62c38 26 306 26 344 0v-62')}{line('layers', continuousRim(lowerRim))}{line('layers', 'M205 345v75c35 24 255 24 290 0v-75')}{line('layers', continuousRim(middleRim))}{line('layers', 'M237 277v68c29 21 197 21 226 0v-68')}{line('layers', continuousRim(upperRim))}
+        {line('layers', 'M178 420v62c38 26 306 26 344 0v-62')}{line('layers', `${sideBackRims(lowerRim, middleRim)} M178 420c24 29 320 29 344 0`)}{line('layers', 'M205 345v75c35 24 255 24 290 0v-75')}{line('layers', `${sideBackRims(middleRim, upperRim)} ${rimArc(middleRim)}`)}{line('layers', 'M237 277v68c29 21 197 21 226 0v-68')}{line('layers', `${backRimArc(upperRim)} ${rimArc(upperRim)}`)}
         {line('cream', upperFrosting, 'cream-line')}{line('cream', middleFrosting, 'cream-line')}
         {line('berries', 'M275 270c-10-19 5-32 17-15 8-20 27-9 19 11')}{line('berries', 'M394 270c-10-19 5-32 17-15 8-20 27-9 19 11')}{line('berries', 'M298 236c-8-23 15-31 20-11 8-22 29-8 18 12')}
         {line('candles', 'M276 277V225M289 277V225M276 225h13M274 267c5 5 10 5 16 0', 'candle-blue')}{line('candles', 'M282.5 225v-9', 'wick')}
