@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { TitleWriting, type TitleController } from '@/components/title-writing'
 
 type StrokeState = 'pending' | 'drawing' | 'complete'
 type Geometry = SVGPathElement
@@ -188,6 +189,7 @@ export default function Page() {
   const [balloonFloating, setBalloonFloating] = useState<boolean[]>([false, false, false, false])
   const [open, setOpen] = useState(false); const [drawing, setDrawing] = useState(true); const [pen, setPen] = useState<{ x: number; y: number } | null>(null); const [penVisible, setPenVisible] = useState(true)
   const drawingRef = useRef<SVGSVGElement | null>(null)
+  const titleController = useRef<TitleController | null>(null)
   const geometries = useRef<Geometry[]>([]); const raf = useRef<number | undefined>(undefined); const balloonRaf = useRef<number | undefined>(undefined); const runId = useRef(0)
   const balloonGroups = useRef<(SVGGElement | null)[]>([])
   const activeBalloonDrawings = useRef(0)
@@ -275,7 +277,9 @@ export default function Page() {
       }
       raf.current = requestAnimationFrame(draw)
     }
-    raf.current = requestAnimationFrame(draw)
+    const startCake = () => { if (id === runId.current) raf.current = requestAnimationFrame(draw) }
+    if (titleController.current) titleController.current.write({ isCurrent: () => id === runId.current, frameRef: raf, onDone: startCake })
+    else startCake()
   }, [])
   useEffect(() => {
     let frame = 0
@@ -371,7 +375,7 @@ if (!balloonDrawn[index] || balloonPhase.current[index] !== 'idle') return
   const line = (group: string, d: string, className = '', children?: ReactNode, ref = register, rim?: string, clipPath?: string) => <path ref={ref} data-stroke data-group={group} data-rim={rim} className={className} d={d} clipPath={clipPath}>{children}</path>
   return <main className="gift-page">
     <Fireworks active={states[6] === 'complete'} />
-    <header className="intro"><p className="eyebrow">A little line of magic</p><h1>For Bảo Ngọc</h1></header>
+    <header className="intro"><p className="eyebrow">A little line of magic</p><h1><TitleWriting controllerRef={titleController} /></h1></header>
     <section className="scene" aria-label="Bức tranh bánh sinh nhật đang đ��ợc vẽ">
       <ShootingStars />
       <svg ref={drawingRef} className="drawing" viewBox="0 0 700 600" role="img" aria-label="Bức tranh bánh sinh nhật"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><clipPath id="middle-cream-visibility"><rect x="0" y="0" width="237" height="600" /><rect x="463" y="0" width="237" height="600" /><rect x="237" y="345" width="226" height="255" /></clipPath></defs>
