@@ -47,14 +47,12 @@ function frostingPath(rim: Rim, count: number, seed: number) {
   }
   const samples = Math.ceil(right - left); let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)}`
   for (let index = 1; index <= samples; index += 1) {
-    const x = left + index; const distance = (x - left) / (right - left); let depth = 14 * Math.sin(Math.PI * distance)
-    waves.forEach((wave) => {
-      const local = (distance * totalArc - wave.center) / wave.period + wave.phase
-      const influence = Math.max(0, 1 - Math.abs(local))
-      const smooth = influence * influence * (3 - 2 * influence)
-      depth += wave.depth * (0.5 - 0.5 * Math.cos(Math.PI * smooth))
-    })
-    path += ` L${x.toFixed(1)} ${(rimY(x) + depth).toFixed(1)}`
+    const x = left + index; const distance = (x - left) / (right - left)
+    const waveIndex = Math.min(waves.length - 1, Math.floor(distance * waves.length)); const wave = waves[waveIndex]
+    const local = distance * waves.length - waveIndex + wave.phase; const smoothS = 0.5 - 0.5 * Math.cos(2 * Math.PI * local)
+    const neighboring = waves.reduce((sum, item) => sum + item.depth, 0) / Math.max(1, waves.length)
+    const depth = 8 + neighboring * 0.28 + (wave.depth * 0.58 + neighboring * 0.16) * smoothS
+    path += ` L${x.toFixed(1)} ${(rimY(x) + depth * Math.sin(Math.PI * distance)).toFixed(1)}`
   }
   for (let index = 1; index <= samples; index += 1) {
     const x = right - index; path += ` L${x.toFixed(1)} ${rimY(x).toFixed(1)}`
