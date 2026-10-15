@@ -40,12 +40,11 @@ function frostingPath(rim: Rim, count: number, seed: number, softness = 1) {
   const arcSamples = Array.from({ length: 257 }, (_, index) => { const t = Math.PI - (Math.PI * index) / 256; return { x: rim.cx + rim.rx * Math.cos(t), y: rim.cy + rim.ry * Math.sin(t) } })
   const arcLengths = [0]; for (let index = 1; index < arcSamples.length; index += 1) { const a = arcSamples[index - 1]; const b = arcSamples[index]; arcLengths.push(arcLengths[index - 1] + Math.hypot(b.x - a.x, b.y - a.y)) }
   const totalArc = arcLengths[arcLengths.length - 1]; const pointAtArc = (distance: number) => { const target = Math.max(0, Math.min(totalArc, distance)); let index = 1; while (index < arcLengths.length && arcLengths[index] < target) index += 1; const a = arcSamples[index - 1]; const b = arcSamples[index]; const mix = (target - arcLengths[index - 1]) / (arcLengths[index] - arcLengths[index - 1] || 1); return { x: a.x + (b.x - a.x) * mix, y: a.y + (b.y - a.y) * mix } }
-  const left = rim.cx - rim.rx; const right = rim.cx + rim.rx;   const spacing = totalArc / (count + 1)
+  const left = rim.cx - rim.rx; const right = rim.cx + rim.rx; const spacing = totalArc / (count + 1)
   const waves: Array<{ center: number; period: number; depth: number; phase: number }> = []
-  for (let index = 0; index < Math.ceil(count); index += 1) {
-    const isHalfWave = index >= Math.floor(count)
+  for (let index = 0; index < count; index += 1) {
     const center = spacing * (index + 1) + (random() - .5) * spacing * .24
-    waves.push({ center, period: spacing * (1.02 + random() * .28) / softness, depth: (5.5 + random() * 8) * softness * (isHalfWave ? 0.5 : 1), phase: (random() - .5) * .07 * softness })
+    waves.push({ center, period: spacing * (1.02 + random() * .28) / softness, depth: (5.5 + random() * 8) * softness, phase: (random() - .5) * .07 * softness })
   }
   const samples = Math.ceil(right - left); const edgeGap = 13; let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)} L${left.toFixed(1)} ${(rimY(left) + edgeGap).toFixed(1)}`
   for (let index = 1; index <= samples; index += 1) {
@@ -62,7 +61,7 @@ function frostingPath(rim: Rim, count: number, seed: number, softness = 1) {
   }
   return path
 }
-const upperFrosting = frostingPath(upperRim, 4.5, 173, 0.78)
+const upperFrosting = frostingPath(upperRim, 4, 173, 0.78)
 const middleFrosting = frostingPath(middleRim, 6, 419, 1)
 
 const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng nhaa, giữ vững phong độ và ngủ cười khà khà thật nhiềuuu. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa 💖💖'
