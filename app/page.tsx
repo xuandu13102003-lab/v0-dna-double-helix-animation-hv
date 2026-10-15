@@ -52,7 +52,7 @@ const lowerRim: Rim = { cx: 350, cy: 420, rx: 172, ry: 29 }
     return path
   }
 
-function frostingPath(rim: Rim, count: number, seed: number, softness = 1) {
+function frostingPath(rim: Rim, count: number, seed: number, softness = 1, cover?: Rim) {
   let state = seed >>> 0
   const random = () => { state = (state * 1664525 + 1013904223) >>> 0; return state / 4294967296 }
   const rimY = (x: number) => rim.cy + rim.ry * Math.sqrt(Math.max(0, 1 - ((x - rim.cx) / rim.rx) ** 2))
@@ -74,14 +74,17 @@ function frostingPath(rim: Rim, count: number, seed: number, softness = 1) {
     const depth = Math.min(depthLimit, wave.depth * smoothS * irregularity)
     path += ` Q${(x - 0.5).toFixed(1)} ${(rimY(x - 0.5) + edgeGap + depth).toFixed(1)} ${x.toFixed(1)} ${(rimY(x) + edgeGap + depth).toFixed(1)}`
   }
-  path += ` L${right.toFixed(1)} ${(rimY(right) + edgeGap).toFixed(1)} L${right.toFixed(1)} ${rimY(right).toFixed(1)}`
-  for (let index = 1; index <= samples; index += 1) {
-    const x = right - index; path += ` L${x.toFixed(1)} ${rimY(x).toFixed(1)}`
+  const backEnd = cover ? cover.cx + cover.rx : left
+  const backY = (x: number) => rim.cy - rim.ry * Math.sqrt(Math.max(0, 1 - ((x - rim.cx) / rim.rx) ** 2))
+  path += ` L${right.toFixed(1)} ${(rimY(right) + edgeGap).toFixed(1)} L${right.toFixed(1)} ${backY(right).toFixed(1)}`
+  const backSamples = Math.max(1, Math.ceil((right - backEnd) / 1))
+  for (let index = 1; index <= backSamples; index += 1) {
+    const x = right - (right - backEnd) * (index / backSamples); path += ` L${x.toFixed(1)} ${backY(x).toFixed(1)}`
   }
   return path
 }
 const upperFrosting = frostingPath(upperRim, 4, 173, 0.84)
-const middleFrosting = frostingPath(middleRim, 6, 419, 1)
+const middleFrosting = frostingPath(middleRim, 6, 419, 1, upperRim)
 
 const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng nhaa, giữ vững phong độ và ngủ cười khà khà thật nhiềuuu. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa 💖💖'
 
