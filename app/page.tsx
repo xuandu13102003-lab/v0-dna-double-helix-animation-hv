@@ -47,7 +47,7 @@ function frostingPath(rim: Rim, count: number, seed: number) {
   }
   const samples = Math.ceil(right - left); let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)}`
   for (let index = 1; index <= samples; index += 1) {
-    const x = left + index; const distance = (x - left) / (right - left); let depth = 0.8
+    const x = left + index; const distance = (x - left) / (right - left); let depth = 14 * Math.sin(Math.PI * distance)
     waves.forEach((wave) => {
       const local = (distance * totalArc - wave.center) / wave.period + wave.phase
       const influence = Math.max(0, 1 - Math.abs(local))
@@ -55,6 +55,9 @@ function frostingPath(rim: Rim, count: number, seed: number) {
       depth += wave.depth * (0.5 - 0.5 * Math.cos(Math.PI * smooth))
     })
     path += ` L${x.toFixed(1)} ${(rimY(x) + depth).toFixed(1)}`
+  }
+  for (let index = 1; index <= samples; index += 1) {
+    const x = right - index; path += ` L${x.toFixed(1)} ${rimY(x).toFixed(1)}`
   }
   return path
 }
