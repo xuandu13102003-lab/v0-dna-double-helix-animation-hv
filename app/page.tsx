@@ -242,7 +242,7 @@ export default function Page() {
       element.style.strokeDashoffset = `${length * (1 - progress)}`
       const point = element.getPointAtLength(length * progress)
       const rim = element.dataset.rim
-      const covered = (rim === 'lower' && point.x > 205 && point.x < 495 && point.y < 420) || (rim === 'middle' && point.x > 237 && point.x < 463 && point.y < 345) || (rim === 'plate' && point.x > 178 && point.x < 522 && point.y < 482)
+      const covered = (rim === 'lower' && point.x > 205 && point.x < 495 && point.y < 420) || (rim === 'middle' && point.x > 237 && point.x < 463 && point.y < 345)
       setPenVisible(progress > 0 && !covered)
       const svg = drawingRef.current
       const elementMatrix = element.getScreenCTM()
@@ -371,8 +371,8 @@ if (!balloonDrawn[index] || balloonPhase.current[index] !== 'idle') return
     <header className="intro"><p className="eyebrow">A little line of magic</p><h1>For Bảo Ngọc</h1></header>
     <section className="scene" aria-label="Bức tranh bánh sinh nhật đang đ��ợc vẽ">
       <ShootingStars />
-      <svg ref={drawingRef} className="drawing" viewBox="0 0 700 600" role="img" aria-label="Bức tranh bánh sinh nhật"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><clipPath id="middle-cream-visibility"><rect x="0" y="0" width="237" height="600" /><rect x="463" y="0" width="237" height="600" /><rect x="237" y="345" width="226" height="255" /></clipPath><clipPath id="plate-rim-visibility"><rect x="0" y="0" width="178" height="600" /><rect x="522" y="0" width="178" height="600" /><rect x="178" y="482" width="344" height="118" /></clipPath></defs>
-        {line('plate', 'M130 505c12 25 429 25 440 0')}{line('plate', 'M130 505c40-30 400-30 440 0', '', undefined, register, 'plate', 'url(#plate-rim-visibility)')}
+      <svg ref={drawingRef} className="drawing" viewBox="0 0 700 600" role="img" aria-label="Bức tranh bánh sinh nhật"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><clipPath id="middle-cream-visibility"><rect x="0" y="0" width="237" height="600" /><rect x="463" y="0" width="237" height="600" /><rect x="237" y="345" width="226" height="255" /></clipPath></defs>
+        {line('plate', 'M130 505c12 25 429 25 440 0')}{line('plate', 'M130 505c40-30 400-30 440 0')}
         {line('layers', 'M178 420v62c38 26 306 26 344 0v-62')}{line('layers', continuousRimRun(lowerRim, middleRim), '', undefined, register, 'lower')}{line('layers', 'M205 345v75c35 24 255 24 290 0v-75')}{line('layers', continuousRimRun(middleRim, upperRim), '', undefined, register, 'middle')}{line('layers', 'M237 277v68c29 21 197 21 226 0v-68')}{line('layers', fullTopRimEllipse(upperRim), '', undefined, register, 'upper')}
         {line('cream', upperFrosting, 'cream-line')}{line('cream', middleFrosting, 'cream-line', undefined, register, 'middle-cream', 'url(#middle-cream-visibility)')}
         {line('berries', 'M275 270c-10-19 5-32 17-15 8-20 27-9 19 11')}{line('berries', 'M394 270c-10-19 5-32 17-15 8-20 27-9 19 11')}{line('berries', 'M298 236c-8-23 15-31 20-11 8-22 29-8 18 12')}
