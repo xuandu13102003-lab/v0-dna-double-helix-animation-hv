@@ -183,7 +183,7 @@ export default function Page() {
   const [balloonDrawn, setBalloonDrawn] = useState<boolean[]>([false, false, false, false])
   const [balloonBusy, setBalloonBusy] = useState<boolean[]>([false, false, false, false])
   const [balloonFloating, setBalloonFloating] = useState<boolean[]>([false, false, false, false])
-  const [open, setOpen] = useState(false); const [drawing, setDrawing] = useState(true); const [pen, setPen] = useState<{ x: number; y: number } | null>(null); const [penVisible, setPenVisible] = useState(true)
+  const [open, setOpen] = useState(false); const [drawing, setDrawing] = useState(true); const [pen, setPen] = useState<{ x: number; y: number } | null>(null); const [penVisible, setPenVisible] = useState(false)
   const drawingRef = useRef<SVGSVGElement | null>(null)
   const geometries = useRef<Geometry[]>([]); const raf = useRef<number | undefined>(undefined); const balloonRaf = useRef<number | undefined>(undefined); const runId = useRef(0)
   const balloonGroups = useRef<(SVGGElement | null)[]>([])
@@ -244,17 +244,20 @@ export default function Page() {
       const rim = element.dataset.rim
       const covered = (rim === 'lower' && point.x > 205 && point.x < 495 && point.y < 420) || (rim === 'middle' && point.x > 237 && point.x < 463 && point.y < 345)
       setPenVisible(progress > 0 && !covered)
-      const svg = drawingRef.current
-      const elementMatrix = element.getScreenCTM()
-      const svgMatrix = svg?.getScreenCTM()
-      if (svg && elementMatrix && svgMatrix) {
-        const screenPoint = new DOMPoint(point.x, point.y).matrixTransform(elementMatrix)
-        const svgPoint = screenPoint.matrixTransform(svgMatrix.inverse())
-        setPen({ x: svgPoint.x, y: svgPoint.y })
+      if (covered) {
+        setPen(null)
       } else {
-        setPen({ x: point.x, y: point.y })
+        const svg = drawingRef.current
+        const elementMatrix = element.getScreenCTM()
+        const svgMatrix = svg?.getScreenCTM()
+        if (svg && elementMatrix && svgMatrix) {
+          const screenPoint = new DOMPoint(point.x, point.y).matrixTransform(elementMatrix)
+          const svgPoint = screenPoint.matrixTransform(svgMatrix.inverse())
+          setPen({ x: svgPoint.x, y: svgPoint.y })
+        } else {
+          setPen({ x: point.x, y: point.y })
+        }
       }
-      if (covered) setPen(null)
       if (progress >= 1) {
         element.style.strokeDashoffset = '0'
         const balloonIndex = balloonStrings.current.indexOf(element)
