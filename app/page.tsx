@@ -81,6 +81,7 @@ function frostingPath(rim: Rim, count: number, seed: number, softness = 1, cover
   for (let index = 1; index <= backSamples; index += 1) {
     const x = right - (right - backEnd) * (index / backSamples); path += ` L${x.toFixed(1)} ${backY(x).toFixed(1)}`
   }
+  path += ` A${rim.rx} ${rim.ry} 0 0 0 ${right.toFixed(1)} ${rim.cy.toFixed(1)}`
   return path
 }
 const upperFrosting = frostingPath(upperRim, 4, 173, 0.84)
