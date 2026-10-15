@@ -34,13 +34,16 @@ const middleRim: Rim = { cx: 350, cy: 345, rx: 145, ry: 26 }
 const lowerRim: Rim = { cx: 350, cy: 420, rx: 172, ry: 29 }
 
   const rimArc = ({ cx, cy, rx, ry }: Rim) => `M${cx - rx} ${cy} A${rx} ${ry} 0 0 0 ${cx + rx} ${cy}`
-  const backRimArc = ({ cx, cy, rx, ry }: Rim, visibleFrom = cx - rx, visibleTo = cx + rx) => {
-    const start = Math.max(cx - rx, visibleFrom); const end = Math.min(cx + rx, visibleTo); const y = (x: number) => cy - ry * Math.sqrt(Math.max(0, 1 - ((x - cx) / rx) ** 2)); const samples = Math.max(2, Math.ceil((end - start) / 3)); let path = `M${start.toFixed(1)} ${y(start).toFixed(1)}`
-    for (let index = 1; index <= samples; index += 1) { const x = start + (end - start) * index / samples; path += ` L${x.toFixed(1)} ${y(x).toFixed(1)}` }
+  const backRimArc = ({ cx, cy, rx, ry }: Rim, from = cx - rx, to = cx + rx) => {
+    const start = Math.max(cx - rx, from); const end = Math.min(cx + rx, to); const y = (x: number) => cy - ry * Math.sqrt(Math.max(0, 1 - ((x - cx) / rx) ** 2)); const samples = Math.max(2, Math.ceil((end - start) / 3)); let path = ''
+    for (let index = 1; index <= samples; index += 1) { const x = end - (end - start) * index / samples; path += ` L${x.toFixed(1)} ${y(x).toFixed(1)}` }
     return path
   }
-  const sideBackRims = (rim: Rim, cover: Rim) => `${backRimArc(rim, rim.cx - rim.rx, cover.cx - cover.rx)}${backRimArc(rim, cover.cx + cover.rx, rim.cx + rim.rx)}`
-  const allRimsPath = `${sideBackRims(lowerRim, middleRim)} ${rimArc(lowerRim)} ${sideBackRims(middleRim, upperRim)} ${rimArc(middleRim)} ${backRimArc(upperRim)} ${rimArc(upperRim)}`
+  const tierRimPath = (rim: Rim, visibleFrom = rim.cx - rim.rx, visibleTo = rim.cx + rim.rx) => {
+    const left = Math.max(rim.cx - rim.rx, visibleFrom); const right = Math.min(rim.cx + rim.rx, visibleTo)
+    return `M${left.toFixed(1)} ${rim.cy.toFixed(1)} A${rim.rx} ${rim.ry} 0 0 0 ${right.toFixed(1)} ${rim.cy.toFixed(1)}${backRimArc(rim, left, right)}`
+  }
+  const allRimsPath = `${tierRimPath(lowerRim, middleRim.cx - middleRim.rx, middleRim.cx + middleRim.rx)} ${tierRimPath(middleRim, upperRim.cx - upperRim.rx, upperRim.cx + upperRim.rx)} ${tierRimPath(upperRim)}`
 
 function frostingPath(rim: Rim, count: number, seed: number, softness = 1) {
   let state = seed >>> 0
