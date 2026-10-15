@@ -24,18 +24,22 @@ export function TitleWriting({ controllerRef }: { controllerRef: Ref<TitleContro
       const pen = penRef.current
       const letters = letterRefs.current.filter((letter): letter is SVGPathElement => Boolean(letter))
       if (!svg || !pen || !letters.length) { onDone(); return }
-      svg.classList.remove('title-written')
-      letters.forEach((letter) => { letter.classList.remove('letter-filled', 'letter-glow'); letter.style.strokeDashoffset = '1' })
-      pen.style.opacity = '0'
+      const lengths = letters.map((letter) => letter.getTotalLength())
+      svg.classList.remove('title-written', 'title-armed')
+      glowTimers.current.forEach((timer) => window.clearTimeout(timer)); glowTimers.current.clear()
+      letters.forEach((letter, index) => { letter.classList.remove('letter-filled', 'letter-glow'); letter.style.strokeDasharray = `${lengths[index]}`; letter.style.strokeDashoffset = `${lengths[index]}` })
+      pen.style.transition = 'none'; pen.style.opacity = '0'; pen.setAttribute('cx', '0'); pen.setAttribute('cy', '0')
 
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         letters.forEach((letter) => { letter.style.strokeDashoffset = '0'; letter.classList.add('letter-filled') })
-        svg.classList.add('title-written')
+        svg.classList.add('title-armed', 'title-written')
         onDone()
         return
       }
 
-      const lengths = letters.map((letter) => letter.getTotalLength())
+      void svg.getBoundingClientRect()
+      svg.classList.add('title-armed')
+      pen.style.transition = ''
       const pixelsPerMillisecond = lengths.reduce((sum, length) => sum + length, 0) / (WRITE_DURATION - TRAVEL_DURATION * (letters.length - 1))
       const segments: Segment[] = []
       letters.forEach((letter, index) => {
@@ -56,7 +60,7 @@ export function TitleWriting({ controllerRef }: { controllerRef: Ref<TitleContro
           const local = segment.duration ? Math.min(1, Math.max(0, elapsed / segment.duration)) : 1
           if (segment.kind === 'letter') {
             const letter = letters[segment.index]
-            letter.style.strokeDashoffset = `${1 - local}`
+            letter.style.strokeDashoffset = `${segment.length * (1 - local)}`
             if (local >= 1 && segment.index >= filledCount) { letter.classList.add('letter-filled'); filledCount = segment.index + 1 }
             if (elapsed <= segment.duration) { const point = letter.getPointAtLength(segment.length * local); movePen(point.x, point.y) }
           } else if (elapsed > 0 && elapsed <= segment.duration) {
@@ -87,9 +91,11 @@ export function TitleWriting({ controllerRef }: { controllerRef: Ref<TitleContro
   return (
     <svg ref={svgRef} className="title-writing" viewBox={`0 0 ${TITLE_WIDTH} ${TITLE_HEIGHT}`} role="img" aria-label={TITLE_TEXT}>
       <title>{TITLE_TEXT}</title>
+      <g className="title-ink">
       {TITLE_LETTERS.map((letter, index) => (
-        <path key={index} ref={(element) => { letterRefs.current[index] = element }} className="title-letter" d={letter.d} pathLength={1} onPointerEnter={() => glow(index)} />
+        <path key={index} ref={(element) => { letterRefs.current[index] = element }} className="title-letter" d={letter.d} onPointerEnter={() => glow(index)} />
       ))}
+      </g>
       <circle ref={penRef} className="pen-tip title-pen" r="3.5" cx="0" cy="0" style={{ opacity: 0 }} />
     </svg>
   )
