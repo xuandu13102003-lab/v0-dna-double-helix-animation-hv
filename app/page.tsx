@@ -278,7 +278,8 @@ export default function Page() {
     job()
   }
   const clickBalloon = useCallback((index: number) => {
-    if (!balloonDrawnRef.current[index] || balloonBusyRef.current[index] || balloonPhase.current[index] !== 'idle') return
+  if (balloonDrawnRef.current[index]) return
+  if (balloonBusyRef.current[index] || balloonPhase.current[index] !== 'idle') return
     const group = balloonGroups.current[index]; const paths = balloonGeometries.current[index]
     if (!group || !paths.length) return
     const bounds = group.getBoundingClientRect(); const sizeFactor = Math.max(.72, Math.min(1.35, bounds.height / 180)); const drift = (index % 2 === 0 ? 1 : -1) * (12 + Math.random() * 12); const exitDistance = -(bounds.top + bounds.height + 32); const flightDuration = 1500 + sizeFactor * 320 + Math.random() * 220
