@@ -371,7 +371,7 @@ if (!balloonDrawn[index] || balloonPhase.current[index] !== 'idle') return
   const line = (group: string, d: string, className = '', children?: ReactNode, ref = register, rim?: string, clipPath?: string) => <path ref={ref} data-stroke data-group={group} data-rim={rim} className={className} d={d} clipPath={clipPath}>{children}</path>
   return <main className="gift-page">
     <Fireworks active={states[6] === 'complete'} />
-    <header className="intro"><p className="eyebrow">A little line of magic</p><h1>For Bảo Ngọc</h1></header>
+    <header className="intro"><p className="eyebrow">A little line of magic</p><h1 aria-label="For Bảo Ngọc"><svg className="title-writing" viewBox="0 0 320 72" aria-hidden="true"><text x="160" y="54" textAnchor="middle">For Bảo Ngọc</text></svg></h1></header>
     <section className="scene" aria-label="Bức tranh bánh sinh nhật đang đ��ợc vẽ">
       <ShootingStars />
       <svg ref={drawingRef} className="drawing" viewBox="0 0 700 600" role="img" aria-label="Bức tranh bánh sinh nhật"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><clipPath id="middle-cream-visibility"><rect x="0" y="0" width="237" height="600" /><rect x="463" y="0" width="237" height="600" /><rect x="237" y="345" width="226" height="255" /></clipPath></defs>

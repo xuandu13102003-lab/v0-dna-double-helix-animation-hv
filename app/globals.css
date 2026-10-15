@@ -16,3 +16,7 @@
 
 @media (max-width: 600px) { .gift-page { padding-top: 26px; } .scene { min-height: 470px; } .subtitle { max-width: 300px; } .drawing { max-height: 500px; } .letter { padding: 25px 24px; } .handwriting text { font-size: 15px; } } @media (max-height: 700px) { .scene { min-height: 390px; } .drawing { max-height: 430px; } } @media (prefers-reduced-motion: reduce) { .shooting-particle { animation: none !important; opacity: .45; } .bubble, .pen-tip, .handwriting text { animation: none !important; stroke-dashoffset: 0; fill: var(--ivory); opacity: 1; } }
 :focus-visible { outline: 2px solid var(--coral); outline-offset: 4px; }
+.title-writing { display: block; width: clamp(220px, 40vw, 380px); height: auto; margin: 0 auto; overflow: visible; }
+.title-writing text { font: 56px 'Patrick Hand', 'Comic Sans MS', 'Segoe Print', 'Bradley Hand', cursive; letter-spacing: -.02em; fill: transparent; stroke: var(--ivory); stroke-width: .9; stroke-linecap: round; stroke-linejoin: round; paint-order: stroke; stroke-dasharray: 420; stroke-dashoffset: 420; animation: write-title 3.6s ease .3s forwards; }
+@keyframes write-title { 70% { fill: transparent; } to { stroke-dashoffset: 0; fill: var(--ivory); } }
+@media (prefers-reduced-motion: reduce) { .title-writing text { animation: none; stroke-dashoffset: 0; fill: var(--ivory); } }
