@@ -31,6 +31,7 @@ const groups = ['plate', 'layers', 'cream', 'candles', 'berries', 'bubbles', 'fi
 type Rim = { cx: number; cy: number; rx: number; ry: number }
 const upperRim: Rim = { cx: 350, cy: 277, rx: 113, ry: 24 }
 const middleRim: Rim = { cx: 350, cy: 345, rx: 145, ry: 26 }
+const lowerRim: Rim = { cx: 350, cy: 420, rx: 172, ry: 29 }
 const rimArc = ({ cx, cy, rx, ry }: Rim) => `M${cx - rx} ${cy} A${rx} ${ry} 0 0 0 ${cx + rx} ${cy}`
 function frostingPath(rim: Rim, count: number, seed: number) {
   let state = seed >>> 0
@@ -43,7 +44,7 @@ function frostingPath(rim: Rim, count: number, seed: number) {
   const waves: Array<{ center: number; period: number; depth: number; phase: number }> = []
   for (let index = 0; index < count; index += 1) {
     const center = spacing * (index + 1) + (random() - .5) * spacing * .2
-    waves.push({ center, period: spacing * (.95 + random() * .2), depth: 8 + random() * 10, phase: (random() - .5) * .08 })
+    waves.push({ center, period: spacing * (1.05 + random() * .22), depth: 6 + random() * 7, phase: (random() - .5) * .05 })
   }
   const samples = Math.ceil(right - left); const edgeGap = 16; let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)} L${left.toFixed(1)} ${(rimY(left) + edgeGap).toFixed(1)}`
   for (let index = 1; index <= samples; index += 1) {
@@ -61,6 +62,7 @@ function frostingPath(rim: Rim, count: number, seed: number) {
 }
 const upperFrosting = frostingPath(upperRim, 4, 173)
 const middleFrosting = frostingPath(middleRim, 6, 419)
+const lowerFrosting = frostingPath(lowerRim, 7, 733)
 const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng nhaa, giữ vững phong độ và ngủ cười khà khà thật nhiềuuu. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa 💖💖'
 
 function ShootingStars() {
@@ -345,7 +347,7 @@ if (!balloonDrawn[index] || balloonPhase.current[index] !== 'idle') return
       <svg ref={drawingRef} className="drawing" viewBox="0 0 700 600" role="img" aria-label="Bức tranh bánh sinh nhật"><defs><filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter><filter id="flame-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
         {line('plate', 'M130 505c12 25 429 25 440 0')}{line('plate', 'M130 505c40-30 400-30 440 0')}
         {line('layers', 'M178 420v62c38 26 306 26 344 0v-62')}{line('layers', 'M178 420c24 29 320 29 344 0')}{line('layers', 'M205 345v75c35 24 255 24 290 0v-75')}{line('layers', rimArc(middleRim))}{line('layers', 'M237 277v68c29 21 197 21 226 0v-68')}{line('layers', rimArc(upperRim))}
-        {line('cream', upperFrosting, 'cream-line')}{line('cream', middleFrosting, 'cream-line')}
+        {line('cream', upperFrosting, 'cream-line')}{line('cream', middleFrosting, 'cream-line')}{line('cream', lowerFrosting, 'cream-line')}
         {line('berries', 'M275 270c-10-19 5-32 17-15 8-20 27-9 19 11')}{line('berries', 'M394 270c-10-19 5-32 17-15 8-20 27-9 19 11')}{line('berries', 'M298 236c-8-23 15-31 20-11 8-22 29-8 18 12')}
         {line('candles', 'M276 277V225M289 277V225M276 225h13M274 267c5 5 10 5 16 0', 'candle-blue')}{line('candles', 'M282.5 225v-9', 'wick')}
         {line('candles', 'M282.5 216c-7-10-1-19 5-27 3 9 11 14 7 23-2 5-7 8-12 4Z', 'flame flame-one', <animate attributeName="d" dur="1.35s" repeatCount="indefinite" values="M282.5 216c-7-10-1-19 5-27 3 9 11 14 7 23-2 5-7 8-12 4Z;M282.5 216c-2-13 6-18 10-28 7 10 6 18 1 25-3 5-7 6-11 3Z;M282.5 216c-8-8-5-18 3-27 1 10 10 13 8 22-1 5-6 8-11 5Z;M282.5 216c-7-10-1-19 5-27 3 9 11 14 7 23-2 5-7 8-12 4Z" />)}
