@@ -65,12 +65,12 @@ function frostingPath(rim: Rim, count: number, seed: number, softness = 1, cover
     const center = spacing * (index + 1) + (random() - .5) * spacing * .24
     waves.push({ center, period: spacing * (1.02 + random() * .28) / softness, depth: (5.5 + random() * 8) * softness, phase: (random() - .5) * .07 * softness })
   }
-  const samples = Math.ceil(right - left); const edgeGap = 13; let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)} L${left.toFixed(1)} ${(rimY(left) + edgeGap).toFixed(1)}`
+  const samples = Math.ceil(right - left); const edgeGap = 0; let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)}`
   for (let index = 1; index <= samples; index += 1) {
     const x = left + index; const distance = (x - left) / (right - left)
     const waveIndex = Math.min(waves.length - 1, Math.floor(distance * waves.length)); const wave = waves[waveIndex]; const local = distance * waves.length - waveIndex + wave.phase; const smoothS = 0.5 - 0.5 * Math.cos(2 * Math.PI * local)
     const irregularity = 1 + 0.09 * Math.sin(distance * Math.PI * 11 + wave.phase * 9) + 0.05 * Math.sin(distance * Math.PI * 17 + wave.depth)
-    const depthLimit = softness > 0.9 ? Number.POSITIVE_INFINITY : edgeGap - 1
+    const depthLimit = softness > 0.9 ? Number.POSITIVE_INFINITY : 12
     const depth = Math.min(depthLimit, wave.depth * smoothS * irregularity)
     path += ` Q${(x - 0.5).toFixed(1)} ${(rimY(x - 0.5) + edgeGap + depth).toFixed(1)} ${x.toFixed(1)} ${(rimY(x) + edgeGap + depth).toFixed(1)}`
   }
@@ -81,6 +81,7 @@ function frostingPath(rim: Rim, count: number, seed: number, softness = 1, cover
   for (let index = 1; index <= backSamples; index += 1) {
     const x = right - (right - backEnd) * (index / backSamples); path += ` L${x.toFixed(1)} ${backY(x).toFixed(1)}`
   }
+  path += ` A${rim.rx} ${rim.ry} 0 0 0 ${right.toFixed(1)} ${rim.cy.toFixed(1)}`
   return path
 }
 const upperFrosting = frostingPath(upperRim, 4, 173, 0.84)
