@@ -223,7 +223,9 @@ export default function Page() {
       const length = lengths[index]
       const duration = Math.max(minimumStrokeDuration, length / pixelsPerMillisecond)
       const progress = Math.min(1, Math.max(0, (now - started) / duration))
-      element.style.opacity = '1'
+      const reachedPath = progress > 0
+      setPenVisible(reachedPath)
+      element.style.opacity = reachedPath ? '1' : '0'
       element.style.strokeDashoffset = `${length * (1 - progress)}`
       const point = element.getPointAtLength(length * progress)
       const svg = drawingRef.current
