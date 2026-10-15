@@ -60,7 +60,7 @@ function frostingPath(rim: Rim, count: number, seed: number, softness = 1) {
   }
   return path
 }
-const upperFrosting = frostingPath(upperRim, 4, 173, 0.72)
+const upperFrosting = frostingPath(upperRim, 4, 173, 0.78)
 const middleFrosting = frostingPath(middleRim, 6, 419, 1)
 
 const message = 'Chúc người bạn thiên tài super cute siêu cấp tốt bụng tuổi mới luôn đầy năng lượng nhaa, giữ vững phong độ và ngủ cười khà khà thật nhiềuuu. Hơn hết là nhớ ăn uống thật đầy đủ nhaaaaaaaa 💖💖'
