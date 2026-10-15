@@ -65,18 +65,18 @@ function frostingPath(rim: Rim, count: number, seed: number, softness = 1, cover
     const center = spacing * (index + 1) + (random() - .5) * spacing * .24
     waves.push({ center, period: spacing * (1.02 + random() * .28) / softness, depth: (5.5 + random() * 8) * softness, phase: (random() - .5) * .07 * softness })
   }
-  const samples = Math.ceil(right - left); const edgeGap = 13; let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)} L${left.toFixed(1)} ${(rimY(left) + edgeGap).toFixed(1)}`
+  const samples = Math.ceil(right - left); const waveGap = 13; let path = `M${left.toFixed(1)} ${rimY(left).toFixed(1)} L${left.toFixed(1)} ${(rimY(left) + waveGap).toFixed(1)}`
   for (let index = 1; index <= samples; index += 1) {
     const x = left + index; const distance = (x - left) / (right - left)
     const waveIndex = Math.min(waves.length - 1, Math.floor(distance * waves.length)); const wave = waves[waveIndex]; const local = distance * waves.length - waveIndex + wave.phase; const smoothS = 0.5 - 0.5 * Math.cos(2 * Math.PI * local)
     const irregularity = 1 + 0.09 * Math.sin(distance * Math.PI * 11 + wave.phase * 9) + 0.05 * Math.sin(distance * Math.PI * 17 + wave.depth)
-    const depthLimit = softness > 0.9 ? Number.POSITIVE_INFINITY : edgeGap - 1
+    const depthLimit = softness > 0.9 ? Number.POSITIVE_INFINITY : waveGap - 1
     const depth = Math.min(depthLimit, wave.depth * smoothS * irregularity)
-    path += ` Q${(x - 0.5).toFixed(1)} ${(rimY(x - 0.5) + edgeGap + depth).toFixed(1)} ${x.toFixed(1)} ${(rimY(x) + edgeGap + depth).toFixed(1)}`
+    path += ` Q${(x - 0.5).toFixed(1)} ${(rimY(x - 0.5) + waveGap + depth).toFixed(1)} ${x.toFixed(1)} ${(rimY(x) + waveGap + depth).toFixed(1)}`
   }
   const backEnd = left
   const backY = (x: number) => rim.cy - rim.ry * Math.sqrt(Math.max(0, 1 - ((x - rim.cx) / rim.rx) ** 2))
-  path += ` L${right.toFixed(1)} ${(rimY(right) + edgeGap).toFixed(1)} L${right.toFixed(1)} ${backY(right).toFixed(1)}`
+  path += ` L${right.toFixed(1)} ${(rimY(right) + waveGap).toFixed(1)} L${right.toFixed(1)} ${backY(right).toFixed(1)}`
   const backSamples = Math.max(1, Math.ceil((right - backEnd) / 1))
   for (let index = 1; index <= backSamples; index += 1) {
     const x = right - (right - backEnd) * (index / backSamples); path += ` L${x.toFixed(1)} ${backY(x).toFixed(1)}`
@@ -213,6 +213,25 @@ export default function Page() {
       .filter((element) => getGeometryLength(element) !== null)
       .sort((a, b) => (groupOrder.get((a.dataset.group || '') as typeof groups[number]) ?? 99) - (groupOrder.get((b.dataset.group || '') as typeof groups[number]) ?? 99))
     const lengths = ordered.map((element) => getGeometryLength(element) ?? 1)
+    const coveredIntervals = new Map<Geometry, { start: number; end: number }>()
+    ordered.forEach((element, pathIndex) => {
+      const rim = element.dataset.rim
+      if (rim !== 'lower' && rim !== 'middle') return
+      const length = lengths[pathIndex]
+      const upper = rim === 'lower'
+        ? { left: 205, right: 495, top: 277, bottom: 420 }
+        : { left: 237, right: 463, top: 209, bottom: 345 }
+      let start = -1
+      for (let sample = 0; sample <= length; sample += 1) {
+        const point = element.getPointAtLength(sample)
+        const covered = point.x >= upper.left && point.x <= upper.right && point.y >= upper.top && point.y <= upper.bottom
+        if (covered && start < 0) start = sample
+        if ((!covered || sample >= length) && start >= 0) {
+          coveredIntervals.set(element, { start, end: sample })
+          break
+        }
+      }
+    })
     const gap = 24
     const available = 30000
     const minimumStrokeDuration = 24
@@ -238,12 +257,17 @@ export default function Page() {
       const length = lengths[index]
       const duration = Math.max(minimumStrokeDuration, length / pixelsPerMillisecond)
       const progress = Math.min(1, Math.max(0, (now - started) / duration))
+      const coveredInterval = coveredIntervals.get(element)
+      const rawLength = length * progress
+      const mappedLength = coveredInterval && rawLength >= coveredInterval.start
+        ? rawLength + (coveredInterval.end - coveredInterval.start)
+        : rawLength
+      const visibleLength = Math.min(length, mappedLength)
       element.style.opacity = '1'
-      element.style.strokeDashoffset = `${length * (1 - progress)}`
-      const point = element.getPointAtLength(length * progress)
-      const rim = element.dataset.rim
-      const covered = (rim === 'lower' && point.x > 205 && point.x < 495 && point.y < 420) || (rim === 'middle' && point.x > 237 && point.x < 463 && point.y < 345)
-      setPenVisible(progress > 0 && !covered)
+      element.style.strokeDashoffset = `${length - visibleLength}`
+      const point = element.getPointAtLength(visibleLength)
+      const insideCoveredInterval = Boolean(coveredInterval && visibleLength >= coveredInterval.start && visibleLength < coveredInterval.end)
+      setPenVisible(progress > 0 && !insideCoveredInterval)
       const svg = drawingRef.current
       const elementMatrix = element.getScreenCTM()
       const svgMatrix = svg?.getScreenCTM()
@@ -254,7 +278,6 @@ export default function Page() {
       } else {
         setPen({ x: point.x, y: point.y })
       }
-      if (covered) setPen(null)
       if (progress >= 1) {
         element.style.strokeDashoffset = '0'
         const balloonIndex = balloonStrings.current.indexOf(element)
