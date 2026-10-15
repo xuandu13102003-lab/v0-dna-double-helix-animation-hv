@@ -51,7 +51,8 @@ function frostingPath(rim: Rim, count: number, seed: number, softness = 1) {
     const x = left + index; const distance = (x - left) / (right - left)
     const waveIndex = Math.min(waves.length - 1, Math.floor(distance * waves.length)); const wave = waves[waveIndex]; const local = distance * waves.length - waveIndex + wave.phase; const smoothS = 0.5 - 0.5 * Math.cos(2 * Math.PI * local)
     const irregularity = 1 + 0.07 * Math.sin(distance * Math.PI * 11 + wave.phase * 9) + 0.04 * Math.sin(distance * Math.PI * 17 + wave.depth)
-    const depth = wave.depth * smoothS * irregularity
+    const maxDepth = rim.ry * 0.5
+    const depth = Math.min(maxDepth, wave.depth * smoothS * irregularity)
     path += ` Q${(x - 0.5).toFixed(1)} ${(rimY(x - 0.5) + edgeGap + depth).toFixed(1)} ${x.toFixed(1)} ${(rimY(x) + edgeGap + depth).toFixed(1)}`
   }
   path += ` L${right.toFixed(1)} ${(rimY(right) + edgeGap).toFixed(1)} L${right.toFixed(1)} ${rimY(right).toFixed(1)}`
