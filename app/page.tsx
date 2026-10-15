@@ -225,6 +225,13 @@ export default function Page() {
       element.style.opacity = '0'
     })
     let index = 0; let started = 0; let currentGroup = ''
+    const pointInsideEllipse = (point: DOMPoint, rim: Rim) => ((point.x - rim.cx) ** 2) / (rim.rx ** 2) + ((point.y - rim.cy) ** 2) / (rim.ry ** 2) <= 1
+    const pointInsideTier = (point: DOMPoint, rim: Rim) => point.x >= rim.cx - rim.rx && point.x <= rim.cx + rim.rx && point.y <= rim.cy && point.y >= rim.cy - 75 || pointInsideEllipse(point, rim)
+    const coveredByUpperTier = (point: DOMPoint, rimName?: string) => {
+      if (rimName === 'lower') return pointInsideTier(point, middleRim)
+      if (rimName === 'middle') return pointInsideTier(point, upperRim)
+      return false
+    }
     const draw = (now: number) => {
       if (id !== runId.current) return
       const element = ordered[index]
@@ -238,11 +245,10 @@ export default function Page() {
       const length = lengths[index]
       const duration = Math.max(minimumStrokeDuration, length / pixelsPerMillisecond)
       const progress = Math.min(1, Math.max(0, (now - started) / duration))
-      element.style.opacity = '1'
-      element.style.strokeDashoffset = `${length * (1 - progress)}`
       const point = element.getPointAtLength(length * progress)
-      const rim = element.dataset.rim
-      const covered = (rim === 'lower' && point.x > 205 && point.x < 495 && point.y < 420) || (rim === 'middle' && point.x > 237 && point.x < 463 && point.y < 345)
+      const covered = coveredByUpperTier(point, element.dataset.rim)
+      element.style.opacity = covered ? '0' : '1'
+      element.style.strokeDashoffset = `${length * (1 - progress)}`
       setPenVisible(progress > 0 && !covered)
       if (covered) {
         setPen(null)
